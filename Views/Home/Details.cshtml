@@ -1,0 +1,414 @@
+@model ProductDetailsViewModel
+
+@{
+    ViewData["Title"] = Model.Product.ProductName;
+    var imageUrl = !string.IsNullOrEmpty(Model.Product.ImageUrl) ? Model.Product.ImageUrl :
+    "https://via.placeholder.com/500x500?text=" + Uri.EscapeDataString(Model.Product.ProductName);
+    var stockQuantity = Model.Product.Inventory?.Quantity ?? 0;
+    var isInStock = stockQuantity > 0;
+}
+
+<!-- Breadcrumb -->
+<div class="mb-6">
+    <nav class="flex" aria-label="Breadcrumb">
+        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+            <li class="inline-flex items-center">
+                <a href="/" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600">
+                    <i class="fas fa-home mr-2"></i>Home
+                </a>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                    <a href="/" class="text-sm font-medium text-gray-700 hover:text-blue-600">Products</a>
+                </div>
+            </li>
+            <li aria-current="page">
+                <div class="flex items-center">
+                    <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                    <span class="text-sm font-medium text-gray-500">@Model.Product.ProductName</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+</div>
+
+<!-- Product Details Section -->
+<div class="bg-white rounded-lg shadow-md p-8 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Product Image -->
+        <div class="flex flex-col">
+            <div class="relative bg-gray-100 rounded-lg overflow-hidden mb-4">
+                <img src="@imageUrl" alt="@Model.Product.ProductName" class="w-full h-96 object-cover" />
+                @if (!isInStock)
+                {
+                    <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                        <span class="text-white font-bold text-2xl">Hết hàng</span>
+                    </div>
+                }
+            </div>
+
+            <!-- Image Thumbnails (placeholder) -->
+            <div class="flex gap-2">
+                <div class="w-16 h-16 bg-gray-200 rounded-lg cursor-pointer hover:opacity-75 transition">
+                    <img src="@imageUrl" alt="Thumbnail 1" class="w-full h-full object-cover rounded-lg" />
+                </div>
+                <div class="w-16 h-16 bg-gray-200 rounded-lg cursor-pointer hover:opacity-75 transition">
+                    <img src="@imageUrl" alt="Thumbnail 2" class="w-full h-full object-cover rounded-lg" />
+                </div>
+                <div class="w-16 h-16 bg-gray-200 rounded-lg cursor-pointer hover:opacity-75 transition">
+                    <img src="@imageUrl" alt="Thumbnail 3" class="w-full h-full object-cover rounded-lg" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Information -->
+        <div class="flex flex-col">
+            <!-- Category Badge -->
+            @if (Model.Product.Category != null)
+            {
+                <div class="mb-4">
+                    <span class="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">
+                        @Model.Product.Category.CategoryName
+                    </span>
+                </div>
+            }
+
+            <!-- Product Name -->
+            <h1 class="text-4xl font-bold text-gray-800 mb-4">@Model.Product.ProductName</h1>
+
+            <!-- Rating -->
+            <div class="flex items-center mb-6">
+                <div class="flex text-yellow-500">
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="far fa-star"></i>
+                </div>
+                <span class="text-gray-600 ml-3">(0 reviews)</span>
+                <a href="#reviews" class="text-blue-600 hover:text-blue-800 ml-4">Write a review</a>
+            </div>
+
+            <!-- Price Section -->
+            <div class="mb-6 pb-6 border-b border-gray-200">
+                <div class="flex items-baseline gap-4">
+                    <span class="text-4xl font-bold text-blue-600">@Model.Product.Price.ToString("#,##0") VNĐ</span>
+                    <span class="text-lg text-gray-500 line-through">@((Model.Product.Price * 1.25).ToString("#,##0"))
+                        VNĐ</span>
+                    <span class="text-lg font-semibold text-green-600">Save 20%</span>
+                </div>
+            </div>
+
+            <!-- Stock Status -->
+            <div class="mb-6 pb-6 border-b border-gray-200">
+                <div class="flex items-center gap-4">
+                    <span class="font-semibold text-gray-700">Availability:</span>
+                    @if (isInStock)
+                    {
+                        <span class="text-green-600 font-semibold flex items-center">
+                            <i class="fas fa-check-circle mr-2"></i>In Stock (@stockQuantity available)
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="text-red-600 font-semibold flex items-center">
+                            <i class="fas fa-times-circle mr-2"></i>Out of Stock
+                        </span>
+                    }
+                </div>
+            </div>
+
+            <!-- Quantity Selector -->
+            <div class="mb-6 pb-6 border-b border-gray-200">
+                <label class="block text-gray-700 font-semibold mb-3">Số lượng:</label>
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center border border-gray-300 rounded-lg">
+                        <button class="px-4 py-2 text-gray-600 hover:bg-gray-100 transition" id="decreaseQty">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <input type="number" id="quantity" value="1" min="1" max="@stockQuantity"
+                            class="w-16 text-center border-l border-r border-gray-300 py-2 focus:outline-none" />
+                        <button class="px-4 py-2 text-gray-600 hover:bg-gray-100 transition" id="increaseQty">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    <span class="text-gray-600">@(isInStock ? $"Only {stockQuantity} left in stock" : "Not available")</span>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-4 mb-6">
+                <button
+                    class="flex-1 @(isInStock ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-400 cursor-not-allowed") text-white py-3 rounded-lg  transition font-semibold text-lg add-to-cart-btn"
+                    data-product-id="@Model.Product.ProductId" data-product-name="@Model.Product.ProductName"
+                    data-product-price="@Model.Product.Price" data-product-image="@imageUrl" @(isInStock ? "" :
+                                                                                                                 "disabled")>
+                    <i class="fas fa-shopping-cart mr-2"></i>@(isInStock ? "Thêm vào giỏ hàng" : "Hết hàng")
+                </button>
+                <button
+                    class="flex-1 border-2 border-blue-600 text-blue-600 py-3 rounded-lg hover:bg-blue-50 transition font-semibold text-lg wishlist-btn"
+                    data-product-id="@Model.Product.ProductId">
+                    <i class="far fa-heart mr-2"></i>Add to Wishlist
+                </button>
+            </div>
+
+            <!-- Product Details -->
+            <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                <h3 class="font-semibold text-gray-800 mb-3">Mô tả sản phẩm</h3>
+                <ul class="space-y-2 text-gray-700">
+                    <li><strong>Mã sản phẩm:</strong> @(Model.Product.Barcode ?? "N/A")</li>
+                    <li><strong>Đơn vị tính:</strong> @Model.Product.Unit</li>
+                    <li><strong>Thể loại:</strong> @(Model.Product.Category?.CategoryName ?? "N/A")</li>
+                </ul>
+            </div>
+
+            <!-- Shipping Info -->
+            <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                <h3 class="font-semibold text-gray-800 mb-3">
+                    <i class="fas fa-truck text-blue-600 mr-2"></i>Thông tin vận chuyển
+                </h3>
+                <ul class="space-y-2 text-gray-700 text-sm">
+                    <li><i class="fas fa-check text-green-600 mr-2"></i>Miễn phí vận chuyển cho đơn hàng trên 1.000.000
+                        VNĐ</li>
+                    <li><i class="fas fa-check text-green-600 mr-2"></i>Giao hàng hoả tốc trong 24 phút</li>
+                    <li><i class="fas fa-check text-green-600 mr-2"></i>Hỗ trợ ship COD toàn quốc</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Product Description Section -->
+<div class="bg-white rounded-lg shadow-md p-8 mb-8">
+    <h2 class="text-2xl font-bold text-gray-800 mb-4">Product Description</h2>
+    <p class="text-gray-700 leading-relaxed mb-4">
+        This is a high-quality product that meets all your needs. Manufactured with premium materials and designed for
+        durability and performance.
+        Perfect for both personal and professional use.
+    </p>
+    <p class="text-gray-700 leading-relaxed">
+        Our product comes with comprehensive warranty coverage and dedicated customer support. We stand behind the
+        quality of our products
+        and are committed to your satisfaction.
+    </p>
+</div>
+
+<!-- Reviews Section -->
+<div class="bg-white rounded-lg shadow-md p-8 mb-8" id="reviews">
+    <h2 class="text-2xl font-bold text-gray-800 mb-6">Customer Reviews</h2>
+
+    <!-- Review Summary -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8 pb-8 border-b border-gray-200">
+        <div class="text-center">
+            <div class="text-5xl font-bold text-gray-800 mb-2">4.0</div>
+            <div class="flex justify-center text-yellow-500 mb-2">
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="far fa-star"></i>
+            </div>
+            <p class="text-gray-600">Based on 0 reviews</p>
+        </div>
+
+        <div class="md:col-span-2">
+            <div class="space-y-2">
+                <div class="flex items-center gap-4">
+                    <span class="text-gray-600 w-12">5 <i class="fas fa-star text-yellow-500"></i></span>
+                    <div class="flex-1 bg-gray-200 rounded-full h-2">
+                        <div class="bg-yellow-500 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <span class="text-gray-600 w-12">0</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="text-gray-600 w-12">4 <i class="fas fa-star text-yellow-500"></i></span>
+                    <div class="flex-1 bg-gray-200 rounded-full h-2">
+                        <div class="bg-yellow-500 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <span class="text-gray-600 w-12">0</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="text-gray-600 w-12">3 <i class="fas fa-star text-yellow-500"></i></span>
+                    <div class="flex-1 bg-gray-200 rounded-full h-2">
+                        <div class="bg-yellow-500 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <span class="text-gray-600 w-12">0</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="text-gray-600 w-12">2 <i class="fas fa-star text-yellow-500"></i></span>
+                    <div class="flex-1 bg-gray-200 rounded-full h-2">
+                        <div class="bg-yellow-500 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <span class="text-gray-600 w-12">0</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="text-gray-600 w-12">1 <i class="fas fa-star text-yellow-500"></i></span>
+                    <div class="flex-1 bg-gray-200 rounded-full h-2">
+                        <div class="bg-yellow-500 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <span class="text-gray-600 w-12">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- No Reviews Message -->
+    <div class="text-center py-8">
+        <i class="fas fa-comment-slash text-4xl text-gray-300 mb-4"></i>
+        <p class="text-gray-600 text-lg">No reviews yet. Be the first to review this product!</p>
+    </div>
+</div>
+
+<!-- Related Products Section -->
+@if (Model.RelatedProducts != null && Model.RelatedProducts.Count > 0)
+{
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">Những sản phẩm liên quan</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            @foreach (var product in Model.RelatedProducts)
+            {
+                var relatedImageUrl = !string.IsNullOrEmpty(product.ImageUrl) ? product.ImageUrl :
+                "https://via.placeholder.com/300x200?text=" + Uri.EscapeDataString(product.ProductName);
+                var relatedStockQuantity = product.Inventory?.Quantity ?? 0;
+                var relatedIsInStock = relatedStockQuantity > 0;
+
+                <a href="@Url.Action("Details", new { id = product.ProductId })"
+                    class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition transform hover:scale-105 block">
+                    <div class="relative bg-gray-200 h-40 overflow-hidden">
+                        <img src="@relatedImageUrl" alt="@product.ProductName" class="w-full h-full object-cover" />
+                        @if (!relatedIsInStock)
+                        {
+                            <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                                <span class="text-white font-bold text-sm">Out of Stock</span>
+                            </div>
+                        }
+                    </div>
+                    <div class="p-4">
+                        <h3 class="text-sm font-semibold text-gray-800 mb-2 line-clamp-2">@product.ProductName</h3>
+                        <div class="flex items-center justify-between">
+                            <span class="text-lg font-bold text-blue-600">@product.Price.ToString("#,##0")đ</span>
+                            <div class="text-yellow-500 text-xs">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="far fa-star"></i>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            }
+        </div>
+    </div>
+}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const quantityInput = document.getElementById('quantity');
+        const decreaseBtn = document.getElementById('decreaseQty');
+        const increaseBtn = document.getElementById('increaseQty');
+        const addToCartBtn = document.querySelector('.add-to-cart-btn');
+        const wishlistBtn = document.querySelector('.wishlist-btn');
+        const maxQuantity = parseInt(quantityInput.max) || 1;
+
+        // Quantity controls
+        decreaseBtn.addEventListener('click', function () {
+            const currentValue = parseInt(quantityInput.value) || 1;
+            if (currentValue > 1) {
+                quantityInput.value = currentValue - 1;
+            }
+        });
+
+        increaseBtn.addEventListener('click', function () {
+            const currentValue = parseInt(quantityInput.value) || 1;
+            if (currentValue < maxQuantity) {
+                quantityInput.value = currentValue + 1;
+            }
+        });
+
+        // Add to cart
+        addToCartBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            const productId = this.dataset.productId;
+            const productName = this.dataset.productName;
+            const productPrice = parseFloat(this.dataset.productPrice);
+            const quantity = parseInt(quantityInput.value) || 1;
+            const productImage = this.dataset.productImage;
+
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const existingItem = cart.find(item => item.id === productId);
+
+            if (existingItem) {
+                existingItem.quantity += quantity;
+            } else {
+                cart.push({
+                    id: productId,
+                    name: productName,
+                    price: productPrice,
+                    image: productImage,
+                    quantity: quantity
+                });
+            }
+
+            localStorage.setItem('cart', JSON.stringify(cart));
+
+            // Show notification
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 px-6 py-3 rounded-lg text-white font-semibold z-50 bg-green-500 animate-fade-in';
+            notification.textContent = `${quantity} x ${productName} added to cart!`;
+            document.body.appendChild(notification);
+
+            setTimeout(() => notification.remove(), 3000);
+
+            // Update cart count
+            updateCartCount();
+        });
+
+        // Wishlist
+        wishlistBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            const icon = this.querySelector('i');
+            icon.classList.toggle('fas');
+            icon.classList.toggle('far');
+            icon.classList.toggle('text-red-600');
+
+            const productName = document.querySelector('h1').textContent;
+            if (icon.classList.contains('fas')) {
+                showNotification(`${productName} added to wishlist!`, 'success');
+            } else {
+                showNotification(`${productName} removed from wishlist!`, 'info');
+            }
+        });
+
+        function updateCartCount() {
+            const cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
+            const cartBadges = document.querySelectorAll('[data-cart-count]');
+            cartBadges.forEach(badge => {
+                badge.textContent = cartCount;
+            });
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg text-white font-semibold z-50 animate-fade-in`;
+
+            switch (type) {
+                case 'success':
+                    notification.classList.add('bg-green-500');
+                    break;
+                case 'error':
+                    notification.classList.add('bg-red-500');
+                    break;
+                default:
+                    notification.classList.add('bg-blue-500');
+            }
+
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => notification.remove(), 3000);
+        }
+    });
+</script>

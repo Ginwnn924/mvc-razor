@@ -1,0 +1,72 @@
+@model ErrorViewModel
+@{
+    Layout = null;
+    var icon = Model?.Icon ?? "fa-exclamation-triangle";
+    var iconColor = Model?.IconColor ?? "text-red-500";
+    var title = Model?.Title ?? "Oops! Something went wrong";
+    var message = Model?.Message ?? "We're sorry, but something unexpected happened. Please try again later.";
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@title - ShopHub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+
+<body class="bg-gradient-to-br from-gray-100 to-gray-200 min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-lg w-full">
+        <div class="bg-white rounded-2xl shadow-2xl p-10 text-center">
+            <!-- Logo -->
+            <a href="/" class="inline-block mb-8">
+                <span class="text-2xl font-bold text-blue-600">
+                    <i class="fas fa-shopping-bag mr-2"></i>ShopHub
+                </span>
+            </a>
+
+            <!-- Icon -->
+            <div class="w-28 h-28 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas @icon text-6xl @iconColor"></i>
+            </div>
+
+            <!-- Title -->
+            <h1 class="text-3xl font-bold text-gray-800 mb-4">@title</h1>
+
+            <!-- Message -->
+            <p class="text-gray-600 mb-8 leading-relaxed">@message</p>
+
+            @if (Model?.ShowRequestId == true)
+            {
+                <div class="bg-gray-100 rounded-lg p-4 mb-8 text-left">
+                    <p class="text-gray-700 text-sm">
+                        <strong>Request ID:</strong> <code
+                            class="text-xs bg-gray-200 px-2 py-1 rounded">@Model.RequestId</code>
+                    </p>
+                </div>
+            }
+
+            <!-- Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="/"
+                    class="bg-blue-600 text-white px-8 py-3 rounded-xl hover:bg-blue-700 transition font-semibold inline-flex items-center justify-center shadow-lg hover:shadow-xl">
+                    <i class="fas fa-shopping-bag mr-2"></i>Tiếp tục mua sắm
+                </a>
+                <a href="javascript:history.back()"
+                    class="border-2 border-gray-300 text-gray-700 px-8 py-3 rounded-xl hover:bg-gray-100 transition font-semibold inline-flex items-center justify-center">
+                    <i class="fas fa-arrow-left mr-2"></i>Quay lại
+                </a>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <p class="text-center text-gray-500 text-sm mt-6">
+            © 2024 ShopHub. All rights reserved.
+        </p>
+    </div>
+</body>
+
+</html>
