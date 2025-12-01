@@ -292,7 +292,37 @@ function initializeEventListeners() {
     'form[method="get"][action*="Search"]'
   );
   if (searchForm) {
-    searchForm.addEventListener("submit", handleSearch);
+    searchForm.addEventListener("submit", function(event) {
+      // Preserve current filters when searching
+      const currentUrl = new URL(window.location.href);
+      const categoryId = currentUrl.searchParams.get("categoryId");
+      const minPrice = currentUrl.searchParams.get("minPrice");
+      const maxPrice = currentUrl.searchParams.get("maxPrice");
+      
+      if (categoryId) {
+        const hiddenInput = document.createElement("input");
+        hiddenInput.type = "hidden";
+        hiddenInput.name = "categoryId";
+        hiddenInput.value = categoryId;
+        event.target.appendChild(hiddenInput);
+      }
+      if (minPrice) {
+        const hiddenInput = document.createElement("input");
+        hiddenInput.type = "hidden";
+        hiddenInput.name = "minPrice";
+        hiddenInput.value = minPrice;
+        event.target.appendChild(hiddenInput);
+      }
+      if (maxPrice) {
+        const hiddenInput = document.createElement("input");
+        hiddenInput.type = "hidden";
+        hiddenInput.name = "maxPrice";
+        hiddenInput.value = maxPrice;
+        event.target.appendChild(hiddenInput);
+      }
+      
+      handleSearch(event);
+    });
   }
 }
 

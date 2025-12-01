@@ -17,17 +17,43 @@ namespace mvc_razor.Controllers
             _context = context;
         }
 
-        public async Task<IActionResult> Index(int page = 1, int pageSize = 12)
+        public async Task<IActionResult> Index(int page = 1, int pageSize = 12, string? searchQuery = null, int? categoryId = null, decimal? minPrice = null, decimal? maxPrice = null)
         {
             try
             {
-                // Get total count
-                var totalProducts = await _context.Products.CountAsync();
-
-                // Get products with pagination
-                var products = await _context.Products
+                // Start with base query
+                var query = _context.Products
                     .Include(p => p.Category)
                     .Include(p => p.Inventory)
+                    .AsQueryable();
+
+                // Apply search filter
+                if (!string.IsNullOrWhiteSpace(searchQuery))
+                {
+                    query = query.Where(p => p.ProductName.Contains(searchQuery));
+                }
+
+                // Apply category filter
+                if (categoryId.HasValue && categoryId.Value > 0)
+                {
+                    query = query.Where(p => p.CategoryId == categoryId.Value);
+                }
+
+                // Apply price filters
+                if (minPrice.HasValue)
+                {
+                    query = query.Where(p => p.Price >= (long)minPrice.Value);
+                }
+                if (maxPrice.HasValue)
+                {
+                    query = query.Where(p => p.Price <= (long)maxPrice.Value);
+                }
+
+                // Get total count after filters
+                var totalProducts = await query.CountAsync();
+
+                // Get products with pagination
+                var products = await query
                     .OrderByDescending(p => p.CreatedAt)
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
@@ -35,6 +61,13 @@ namespace mvc_razor.Controllers
 
                 // Get all categories for filter
                 var categories = await _context.Categories.ToListAsync();
+
+                // Pass data to ViewBag for sidebar and search box
+                ViewBag.Categories = categories;
+                ViewBag.SelectedCategoryId = categoryId;
+                ViewBag.MinPrice = minPrice;
+                ViewBag.MaxPrice = maxPrice;
+                ViewBag.SearchQuery = searchQuery;
 
                 // Create view model
                 var viewModel = new ProductListViewModel
@@ -44,7 +77,11 @@ namespace mvc_razor.Controllers
                     CurrentPage = page,
                     PageSize = pageSize,
                     TotalProducts = totalProducts,
-                    TotalPages = (int)Math.Ceiling((double)totalProducts / pageSize)
+                    TotalPages = (int)Math.Ceiling((double)totalProducts / pageSize),
+                    SearchQuery = searchQuery,
+                    SelectedCategoryId = categoryId,
+                    MinPrice = minPrice,
+                    MaxPrice = maxPrice
                 };
 
                 return View(viewModel);
@@ -93,16 +130,22 @@ namespace mvc_razor.Controllers
             }
         }
 
-        public IActionResult Search(string q)
+        public IActionResult Search(string q, int page = 1, int pageSize = 12, int? categoryId = null, decimal? minPrice = null, decimal? maxPrice = null)
         {
             if (string.IsNullOrWhiteSpace(q))
             {
                 return RedirectToAction("Index");
             }
 
-            // TODO: Implement search functionality with database
-            ViewData["SearchQuery"] = q;
-            return View("Index");
+            // Redirect to Index with search query parameter
+            return RedirectToAction("Index", new { 
+                searchQuery = q, 
+                page = page, 
+                pageSize = pageSize,
+                categoryId = categoryId,
+                minPrice = minPrice,
+                maxPrice = maxPrice
+            });
         }
 
         public IActionResult Privacy()

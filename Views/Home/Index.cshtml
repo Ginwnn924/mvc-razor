@@ -141,6 +141,56 @@
     </div>
 }
 
+<!-- Search/Filter Results Message -->
+@if (!string.IsNullOrEmpty(Model.SearchQuery) || Model.SelectedCategoryId.HasValue || Model.MinPrice.HasValue || Model.MaxPrice.HasValue)
+{
+    <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <div class="flex items-center justify-between">
+            <div>
+                @if (!string.IsNullOrEmpty(Model.SearchQuery))
+                {
+                    <p class="text-gray-700">
+                        <i class="fas fa-search mr-2"></i>Kết quả tìm kiếm cho: <strong>"@Model.SearchQuery"</strong>
+                    </p>
+                }
+                @if (Model.SelectedCategoryId.HasValue)
+                {
+                    var selectedCategory = Model.Categories.FirstOrDefault(c => c.CategoryId == Model.SelectedCategoryId.Value);
+                    if (selectedCategory != null)
+                    {
+                        <p class="text-gray-700 mt-1">
+                            <i class="fas fa-filter mr-2"></i>Thể loại: <strong>@selectedCategory.CategoryName</strong>
+                        </p>
+                    }
+                }
+                @if (Model.MinPrice.HasValue || Model.MaxPrice.HasValue)
+                {
+                    <p class="text-gray-700 mt-1">
+                        <i class="fas fa-dollar-sign mr-2"></i>Giá: 
+                        <strong>
+                            @if (Model.MinPrice.HasValue && Model.MaxPrice.HasValue)
+                            {
+                                <text>@Model.MinPrice.Value.ToString("#,##0")đ - @Model.MaxPrice.Value.ToString("#,##0")đ</text>
+                            }
+                            else if (Model.MinPrice.HasValue)
+                            {
+                                <text>Từ @Model.MinPrice.Value.ToString("#,##0")đ</text>
+                            }
+                            else if (Model.MaxPrice.HasValue)
+                            {
+                                <text>Đến @Model.MaxPrice.Value.ToString("#,##0")đ</text>
+                            }
+                        </strong>
+                    </p>
+                }
+            </div>
+            <a href="@Url.Action("Index")" class="text-blue-600 hover:text-blue-700 font-semibold">
+                <i class="fas fa-times mr-1"></i>Xóa bộ lọc
+            </a>
+        </div>
+    </div>
+}
+
 <!-- Sort and View Options -->
 <div class="flex justify-between items-center mb-6">
     <div>
@@ -243,7 +293,13 @@
     <div class="flex justify-center items-center gap-2 mt-12">
         @if (Model.CurrentPage > 1)
         {
-            <a href="@Url.Action("Index", new { page = Model.CurrentPage - 1 })"
+            <a href="@Url.Action("Index", new { 
+                page = Model.CurrentPage - 1, 
+                searchQuery = Model.SearchQuery, 
+                categoryId = Model.SelectedCategoryId, 
+                minPrice = Model.MinPrice, 
+                maxPrice = Model.MaxPrice 
+            })"
                 class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-100 transition">
                 <i class="fas fa-chevron-left"></i>
             </a>
@@ -257,14 +313,26 @@
             }
             else if (i >= Model.CurrentPage - 2 && i <= Model.CurrentPage + 2)
             {
-                <a href="@Url.Action("Index", new { page = i })"
+                <a href="@Url.Action("Index", new { 
+                    page = i, 
+                    searchQuery = Model.SearchQuery, 
+                    categoryId = Model.SelectedCategoryId, 
+                    minPrice = Model.MinPrice, 
+                    maxPrice = Model.MaxPrice 
+                })"
                     class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-100 transition">@i</a>
             }
         }
 
         @if (Model.CurrentPage < Model.TotalPages)
         {
-            <a href="@Url.Action("Index", new { page = Model.CurrentPage + 1 })"
+            <a href="@Url.Action("Index", new { 
+                page = Model.CurrentPage + 1, 
+                searchQuery = Model.SearchQuery, 
+                categoryId = Model.SelectedCategoryId, 
+                minPrice = Model.MinPrice, 
+                maxPrice = Model.MaxPrice 
+            })"
                 class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-100 transition">
                 <i class="fas fa-chevron-right"></i>
             </a>
