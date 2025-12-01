@@ -21,6 +21,19 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+// Configure security headers
+app.Use(async (context, next) =>
+{
+    // Set Referrer Policy
+    context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+    
+    // Allow same-origin requests
+    context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+    context.Response.Headers.Append("X-Frame-Options", "SAMEORIGIN");
+    
+    await next();
+});
+
 app.UseHttpsRedirection();
 app.UseRouting();
 

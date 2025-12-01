@@ -283,6 +283,18 @@ function initializeEventListeners() {
     button.addEventListener("change", handleFilter);
   });
 
+  // Toggle custom price inputs
+  const priceRadios = document.querySelectorAll('input[name="price"]');
+  priceRadios.forEach((radio) => {
+    radio.addEventListener("change", toggleCustomPriceInputs);
+  });
+
+  // Apply custom price button
+  const applyCustomPriceBtn = document.getElementById("applyCustomPrice");
+  if (applyCustomPriceBtn) {
+    applyCustomPriceBtn.addEventListener("click", handleApplyCustomPrice);
+  }
+
   const clearFiltersBtn = document.querySelector("[data-clear-filters]");
   if (clearFiltersBtn) {
     clearFiltersBtn.addEventListener("click", handleClearFilters);
@@ -292,38 +304,11 @@ function initializeEventListeners() {
     'form[method="get"][action*="Search"]'
   );
   if (searchForm) {
-    searchForm.addEventListener("submit", function(event) {
-      // Preserve current filters when searching
-      const currentUrl = new URL(window.location.href);
-      const categoryId = currentUrl.searchParams.get("categoryId");
-      const minPrice = currentUrl.searchParams.get("minPrice");
-      const maxPrice = currentUrl.searchParams.get("maxPrice");
-      
-      if (categoryId) {
-        const hiddenInput = document.createElement("input");
-        hiddenInput.type = "hidden";
-        hiddenInput.name = "categoryId";
-        hiddenInput.value = categoryId;
-        event.target.appendChild(hiddenInput);
-      }
-      if (minPrice) {
-        const hiddenInput = document.createElement("input");
-        hiddenInput.type = "hidden";
-        hiddenInput.name = "minPrice";
-        hiddenInput.value = minPrice;
-        event.target.appendChild(hiddenInput);
-      }
-      if (maxPrice) {
-        const hiddenInput = document.createElement("input");
-        hiddenInput.type = "hidden";
-        hiddenInput.name = "maxPrice";
-        hiddenInput.value = maxPrice;
-        event.target.appendChild(hiddenInput);
-      }
-      
-      handleSearch(event);
-    });
+    searchForm.addEventListener("submit", handleSearch);
   }
+
+  // Initialize custom price inputs visibility
+  toggleCustomPriceInputs();
 }
 
 function handleAddToCart(event) {
@@ -377,57 +362,172 @@ function handleWishlist(event) {
   updateWishlistCount();
 }
 
+function toggleCustomPriceInputs() {
+  const customInputs = document.getElementById("customPriceInputs");
+  const customRadio = document.getElementById("priceCustomRadio");
+  
+  if (customInputs && customRadio) {
+    if (customRadio.checked) {
+      customInputs.classList.remove("hidden");
+    } else {
+      customInputs.classList.add("hidden");
+    }
+  }
+}
+
+function handleApplyCustomPrice() {
+  const filters = getActiveFilters();
+  applyFilters(filters);
+}
+
 function handleFilter(event) {
+  // If custom radio is selected, don't auto-apply (wait for Apply button)
+  const customRadio = document.getElementById("priceCustomRadio");
+  if (customRadio && customRadio.checked) {
+    toggleCustomPriceInputs();
+    return;
+  }
+  
   const filters = getActiveFilters();
   applyFilters(filters);
 }
 
 function getActiveFilters() {
   const filters = {
-    categories: [],
-    priceRange: null,
-    rating: [],
+    categoryId: null,
+    minPrice: null,
+    maxPrice: null,
   };
 
-  document
-    .querySelectorAll('input[type="checkbox"]:checked')
-    .forEach((checkbox) => {
-      const label = checkbox.nextElementSibling;
-      if (
-        label &&
-        (label.textContent.includes("Electronics") ||
-          label.textContent.includes("Clothing") ||
-          label.textContent.includes("Home") ||
-          label.textContent.includes("Sports") ||
-          label.textContent.includes("Books"))
-      ) {
-        filters.categories.push(label.textContent.trim());
-      }
-    });
+  // Get selected category (if using radio buttons)
+  const categoryRadio = document.querySelector('input[name="category"]:checked');
+  if (categoryRadio && categoryRadio.value) {
+    filters.categoryId = parseInt(categoryRadio.value);
+  }
 
+  // Get selected price range
   const priceRadio = document.querySelector('input[name="price"]:checked');
   if (priceRadio) {
-    filters.priceRange = priceRadio.nextElementSibling.textContent.trim();
+    const priceValue = priceRadio.value;
+    
+    if (priceValue === "custom") {
+      // Get custom price inputs
+      const customMinPrice = document.getElementById("customMinPrice");
+      const customMaxPrice = document.getElementById("customMaxPrice");
+      
+      if (customMinPrice && customMinPrice.value) {
+        filters.minPrice = parseFloat(customMinPrice.value);
+      }
+      if (customMaxPrice && customMaxPrice.value) {
+        filters.maxPrice = parseFloat(customMaxPrice.value);
+      }
+    } else if (priceValue) {
+      // Parse predefined ranges
+      if (priceValue === "0-50000") {
+        filters.minPrice = 0;
+        filters.maxPrice = 50000;
+      } else if (priceValue === "50000-200000") {
+        filters.minPrice = 50000;
+        filters.maxPrice = 200000;
+      } else if (priceValue === "200000-1000000") {
+        filters.minPrice = 200000;
+        filters.maxPrice = 1000000;
+      } else if (priceValue === "1000000-") {
+        filters.minPrice = 1000000;
+        filters.maxPrice = null;
+      }
+    }
   }
 
   return filters;
 }
 
 function applyFilters(filters) {
-  console.log("Applying filters:", filters);
+  // Validate custom price inputs
+  if (filters.minPrice !== null && filters.maxPrice !== null && filters.minPrice > filters.maxPrice) {
+    showNotification("Giá tối thiểu phải nhỏ hơn giá tối đa!", "error");
+    return;
+  }
+
+  if (filters.minPrice !== null && filters.minPrice < 0) {
+    showNotification("Giá tối thiểu phải lớn hơn hoặc bằng 0!", "error");
+    return;
+  }
+
+  if (filters.maxPrice !== null && filters.maxPrice < 0) {
+    showNotification("Giá tối đa phải lớn hơn hoặc bằng 0!", "error");
+    return;
+  }
+
+  // Build query parameters
+  const params = new URLSearchParams();
+  
+  // Preserve search query if exists
+  const currentUrl = new URL(window.location.href);
+  const searchQuery = currentUrl.searchParams.get("searchQuery");
+  if (searchQuery) {
+    params.append("searchQuery", searchQuery);
+  }
+
+  // Add filter parameters
+  if (filters.categoryId) {
+    params.append("categoryId", filters.categoryId);
+  }
+  if (filters.minPrice !== null) {
+    params.append("minPrice", filters.minPrice);
+  }
+  if (filters.maxPrice !== null) {
+    params.append("maxPrice", filters.maxPrice);
+  }
+
+  // Redirect to Index with filters
+  const origin = window.location.origin;
+  const indexUrl = `${origin}/Home/Index`;
+  const queryString = params.toString();
+  const finalUrl = queryString ? `${indexUrl}?${queryString}` : indexUrl;
+  
+  window.location.href = finalUrl;
 }
 
 function handleClearFilters(event) {
   event.preventDefault();
 
-  document.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
-    checkbox.checked = false;
-  });
+  // Uncheck all radio buttons
   document.querySelectorAll('input[type="radio"]').forEach((radio) => {
     radio.checked = false;
   });
 
-  showNotification("Filters cleared!", "info");
+  // Check "All" options
+  const allCategoryRadio = document.querySelector('input[name="category"][value=""]');
+  if (allCategoryRadio) {
+    allCategoryRadio.checked = true;
+  }
+  const allPriceRadio = document.querySelector('input[name="price"][value=""]');
+  if (allPriceRadio) {
+    allPriceRadio.checked = true;
+  }
+
+  // Clear custom price inputs
+  const customMinPrice = document.getElementById("customMinPrice");
+  const customMaxPrice = document.getElementById("customMaxPrice");
+  if (customMinPrice) customMinPrice.value = "";
+  if (customMaxPrice) customMaxPrice.value = "";
+
+  // Hide custom inputs
+  const customInputs = document.getElementById("customPriceInputs");
+  if (customInputs) {
+    customInputs.classList.add("hidden");
+  }
+
+  // Redirect to Index without filters
+  const currentUrl = new URL(window.location.href);
+  const searchQuery = currentUrl.searchParams.get("searchQuery");
+  
+  const origin = window.location.origin;
+  const indexUrl = `${origin}/Home/Index`;
+  const finalUrl = searchQuery ? `${indexUrl}?searchQuery=${encodeURIComponent(searchQuery)}` : indexUrl;
+  
+  window.location.href = finalUrl;
 }
 
 function handleSearch(event) {
