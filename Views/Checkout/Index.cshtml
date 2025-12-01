@@ -219,6 +219,20 @@
                         <span class="font-bold text-gray-800">Tổng cộng:</span>
                         <span id="checkoutTotal" class="font-bold text-2xl text-blue-600">0đ</span>
                     </div>
+
+                    <!-- Applied Promo Tag -->
+                    <div id="appliedPromoContainer" class="hidden mt-3">
+                        <div id="appliedPromoTag"
+                            class="inline-flex items-center gap-2 bg-green-100 text-green-700 px-3 py-2 rounded-lg text-sm font-semibold">
+                            <i class="fas fa-tag"></i>
+                            <span id="appliedPromoCode">SAVE10</span>
+                            <span id="appliedPromoPercent" class="text-green-600">(-10%)</span>
+                            <button id="removePromoBtn" class="ml-1 text-green-600 hover:text-red-500 transition"
+                                title="Xóa mã giảm giá">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Promo Code -->
@@ -284,12 +298,12 @@
 
             if (cart.length === 0) {
                 container.innerHTML = `
-                            <div class="text-center py-8">
-                                <i class="fas fa-shopping-cart text-4xl text-gray-300 mb-3"></i>
-                                <p class="text-gray-500">Giỏ hàng trống</p>
-                                <a href="/" class="text-blue-600 hover:underline mt-2 inline-block">Tiếp tục mua sắm</a>
-                            </div>
-                        `;
+                                    <div class="text-center py-8">
+                                        <i class="fas fa-shopping-cart text-4xl text-gray-300 mb-3"></i>
+                                        <p class="text-gray-500">Giỏ hàng trống</p>
+                                        <a href="/" class="text-blue-600 hover:underline mt-2 inline-block">Tiếp tục mua sắm</a>
+                                    </div>
+                                `;
                 updateCheckoutTotals(0, 0);
                 return;
             }
@@ -304,15 +318,15 @@
                 const imageUrl = item.image || `https://via.placeholder.com/60x60?text=${encodeURIComponent(item.name)}`;
 
                 html += `
-                            <div class="flex gap-3 pb-3 border-b border-gray-100">
-                                <img src="${imageUrl}" alt="${item.name}" class="w-16 h-16 object-cover rounded-lg bg-gray-100" />
-                                <div class="flex-1 min-w-0">
-                                    <h4 class="text-sm font-semibold text-gray-800 line-clamp-2">${item.name}</h4>
-                                    <p class="text-sm text-gray-500">SL: ${item.quantity}</p>
-                                    <p class="text-sm font-bold text-blue-600">${itemTotal.toLocaleString('vi-VN')}đ</p>
-                                </div>
-                            </div>
-                        `;
+                                    <div class="flex gap-3 pb-3 border-b border-gray-100">
+                                        <img src="${imageUrl}" alt="${item.name}" class="w-16 h-16 object-cover rounded-lg bg-gray-100" />
+                                        <div class="flex-1 min-w-0">
+                                            <h4 class="text-sm font-semibold text-gray-800 line-clamp-2">${item.name}</h4>
+                                            <p class="text-sm text-gray-500">SL: ${item.quantity}</p>
+                                            <p class="text-sm font-bold text-blue-600">${itemTotal.toLocaleString('vi-VN')}đ</p>
+                                        </div>
+                                    </div>
+                                `;
             });
 
             container.innerHTML = html;
@@ -389,12 +403,50 @@
                 if (promoCodes[code]) {
                     const discount = promoCodes[code];
                     localStorage.setItem('promoDiscount', discount);
+                    localStorage.setItem('promoCode', code);
                     showPromoMessage(`Áp dụng thành công! Giảm ${(discount * 100).toFixed(0)}%`, 'success');
+                    showAppliedPromoTag(code, discount);
                     loadCheckoutCart();
+                    promoInput.value = '';
                 } else {
                     showPromoMessage('Mã giảm giá không hợp lệ', 'error');
                 }
             });
+
+            // Xử lý xóa mã giảm giá
+            const removePromoBtn = document.getElementById('removePromoBtn');
+            removePromoBtn.addEventListener('click', removePromoCode);
+
+            // Load promo tag nếu đã có từ trước
+            loadExistingPromoTag();
+        }
+
+        function showAppliedPromoTag(code, discount) {
+            const container = document.getElementById('appliedPromoContainer');
+            const codeSpan = document.getElementById('appliedPromoCode');
+            const percentSpan = document.getElementById('appliedPromoPercent');
+
+            codeSpan.textContent = code;
+            percentSpan.textContent = `(-${(discount * 100).toFixed(0)}%)`;
+            container.classList.remove('hidden');
+        }
+
+        function removePromoCode() {
+            localStorage.removeItem('promoDiscount');
+            localStorage.removeItem('promoCode');
+            document.getElementById('appliedPromoContainer').classList.add('hidden');
+            document.getElementById('promoMessage').classList.add('hidden');
+            loadCheckoutCart();
+            showNotification('Đã xóa mã giảm giá', 'info');
+        }
+
+        function loadExistingPromoTag() {
+            const savedCode = localStorage.getItem('promoCode');
+            const savedDiscount = parseFloat(localStorage.getItem('promoDiscount'));
+
+            if (savedCode && savedDiscount) {
+                showAppliedPromoTag(savedCode, savedDiscount);
+            }
         }
 
         function showPromoMessage(message, type) {
@@ -472,18 +524,39 @@
                     createdAt: new Date().toISOString()
                 };
 
-                // Simulate order placement
+                // Gửi đơn hàng lên server
                 placeOrderBtn.disabled = true;
                 placeOrderBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Đang xử lý...';
 
-                setTimeout(() => {
-                    // Clear cart and promo
-                    localStorage.removeItem('cart');
-                    localStorage.removeItem('promoDiscount');
+                fetch('/Checkout/PlaceOrder', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(order)
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Clear cart and promo
+                            localStorage.removeItem('cart');
+                            localStorage.removeItem('promoDiscount');
+                            localStorage.removeItem('promoCode');
 
-                    // Show success
-                    showOrderSuccess(order);
-                }, 1500);
+                            // Show success
+                            showOrderSuccess({ ...order, orderId: data.orderId });
+                        } else {
+                            showNotification(data.message || 'Có lỗi xảy ra!', 'error');
+                            placeOrderBtn.disabled = false;
+                            placeOrderBtn.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Đặt hàng';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showNotification('Có lỗi xảy ra, vui lòng thử lại!', 'error');
+                        placeOrderBtn.disabled = false;
+                        placeOrderBtn.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Đặt hàng';
+                    });
             });
 
             // Remove red border on input
@@ -495,35 +568,35 @@
         }
 
         function showOrderSuccess(order) {
-            const orderId = 'SH' + Date.now().toString().slice(-8);
+            const orderId = order.orderId || ('SH' + Date.now().toString().slice(-8));
 
             document.querySelector('.max-w-6xl').innerHTML = `
-                        <div class="bg-white rounded-lg shadow-lg p-8 max-w-2xl mx-auto text-center">
-                            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <i class="fas fa-check text-4xl text-green-500"></i>
-                            </div>
-                            <h1 class="text-3xl font-bold text-gray-800 mb-4">Đặt hàng thành công!</h1>
-                            <p class="text-gray-600 mb-6">Cảm ơn bạn đã đặt hàng. Chúng tôi sẽ liên hệ với bạn sớm nhất.</p>
+                                <div class="bg-white rounded-lg shadow-lg p-8 max-w-2xl mx-auto text-center">
+                                    <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <i class="fas fa-check text-4xl text-green-500"></i>
+                                    </div>
+                                    <h1 class="text-3xl font-bold text-gray-800 mb-4">Đặt hàng thành công!</h1>
+                                    <p class="text-gray-600 mb-6">Cảm ơn bạn đã đặt hàng. Chúng tôi sẽ liên hệ với bạn sớm nhất.</p>
                 
-                            <div class="bg-gray-50 rounded-lg p-6 mb-6 text-left">
-                                <h3 class="font-bold text-gray-800 mb-4">Thông tin đơn hàng</h3>
-                                <div class="space-y-2 text-sm">
-                                    <p><span class="text-gray-500">Mã đơn hàng:</span> <span class="font-bold text-blue-600">${orderId}</span></p>
-                                    <p><span class="text-gray-500">Khách hàng:</span> <span class="font-semibold">${order.customerName}</span></p>
-                                    <p><span class="text-gray-500">Số điện thoại:</span> <span class="font-semibold">${order.phoneNumber}</span></p>
-                                    <p><span class="text-gray-500">Email:</span> <span class="font-semibold">${order.email}</span></p>
-                                    <p><span class="text-gray-500">Địa chỉ:</span> <span class="font-semibold">${order.address}</span></p>
-                                    <p><span class="text-gray-500">Phương thức thanh toán:</span> <span class="font-semibold">${getPaymentMethodName(order.paymentMethod)}</span></p>
-                                </div>
-                            </div>
+                                    <div class="bg-gray-50 rounded-lg p-6 mb-6 text-left">
+                                        <h3 class="font-bold text-gray-800 mb-4">Thông tin đơn hàng</h3>
+                                        <div class="space-y-2 text-sm">
+                                            <p><span class="text-gray-500">Mã đơn hàng:</span> <span class="font-bold text-blue-600">${orderId}</span></p>
+                                            <p><span class="text-gray-500">Khách hàng:</span> <span class="font-semibold">${order.customerName}</span></p>
+                                            <p><span class="text-gray-500">Số điện thoại:</span> <span class="font-semibold">${order.phoneNumber}</span></p>
+                                            <p><span class="text-gray-500">Email:</span> <span class="font-semibold">${order.email}</span></p>
+                                            <p><span class="text-gray-500">Địa chỉ:</span> <span class="font-semibold">${order.address}</span></p>
+                                            <p><span class="text-gray-500">Phương thức thanh toán:</span> <span class="font-semibold">${getPaymentMethodName(order.paymentMethod)}</span></p>
+                                        </div>
+                                    </div>
 
-                            <div class="flex gap-4 justify-center">
-                                <a href="/" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
-                                    <i class="fas fa-home mr-2"></i>Về trang chủ
-                                </a>
-                            </div>
-                        </div>
-                    `;
+                                    <div class="flex gap-4 justify-center">
+                                        <a href="/" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
+                                            <i class="fas fa-home mr-2"></i>Về trang chủ
+                                        </a>
+                                    </div>
+                                </div>
+                            `;
 
             // Update cart count
             if (typeof updateCartCount === 'function') {

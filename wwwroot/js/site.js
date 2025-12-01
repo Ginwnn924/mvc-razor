@@ -46,7 +46,7 @@ function initializeCartOverlay() {
       }
 
       // Có sản phẩm - chuyển đến trang checkout
-      window.location.href = "/Home/Checkout";
+      window.location.href = "/Checkout";
     });
   }
 
