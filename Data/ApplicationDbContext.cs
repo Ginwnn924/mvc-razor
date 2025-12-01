@@ -19,6 +19,7 @@ namespace mvc_razor.Data
         public DbSet<PaymentModel> Payments { get; set; }
         public DbSet<ProductModel> Products { get; set; }
         public DbSet<PromotionModel> Promotions { get; set; }
+        public DbSet<ReviewModel> Reviews { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

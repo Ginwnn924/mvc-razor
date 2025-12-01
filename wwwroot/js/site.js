@@ -283,6 +283,20 @@ function initializeEventListeners() {
     button.addEventListener("change", handleFilter);
   });
 
+  // Ensure only one rating checkbox is selected at a time
+  const ratingCheckboxes = document.querySelectorAll('input[data-filter="rating"]');
+  ratingCheckboxes.forEach((checkbox) => {
+    checkbox.addEventListener("change", function () {
+      if (this.checked) {
+        ratingCheckboxes.forEach((cb) => {
+          if (cb !== this) {
+            cb.checked = false;
+          }
+        });
+      }
+    });
+  });
+
   // Toggle custom price inputs
   const priceRadios = document.querySelectorAll('input[name="price"]');
   priceRadios.forEach((radio) => {
@@ -397,6 +411,7 @@ function getActiveFilters() {
     categoryId: null,
     minPrice: null,
     maxPrice: null,
+    minRating: null,
   };
 
   // Get selected category (if using radio buttons)
@@ -439,6 +454,17 @@ function getActiveFilters() {
     }
   }
 
+  // Get selected rating (only one allowed)
+  const ratingCheckboxes = document.querySelectorAll('input[data-filter="rating"]');
+  ratingCheckboxes.forEach((checkbox) => {
+    if (checkbox.checked) {
+      const ratingValue = parseInt(checkbox.value);
+      if (!isNaN(ratingValue)) {
+        filters.minRating = ratingValue;
+      }
+    }
+  });
+
   return filters;
 }
 
@@ -480,6 +506,10 @@ function applyFilters(filters) {
     params.append("maxPrice", filters.maxPrice);
   }
 
+  if (filters.minRating !== null) {
+    params.append("minRating", filters.minRating);
+  }
+
   // Redirect to Index with filters
   const origin = window.location.origin;
   const indexUrl = `${origin}/Home/Index`;
@@ -495,6 +525,11 @@ function handleClearFilters(event) {
   // Uncheck all radio buttons
   document.querySelectorAll('input[type="radio"]').forEach((radio) => {
     radio.checked = false;
+  });
+
+  // Uncheck all rating checkboxes
+  document.querySelectorAll('input[data-filter="rating"]').forEach((checkbox) => {
+    checkbox.checked = false;
   });
 
   // Check "All" options

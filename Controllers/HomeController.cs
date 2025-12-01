@@ -17,7 +17,14 @@ namespace mvc_razor.Controllers
             _context = context;
         }
 
-        public async Task<IActionResult> Index(int page = 1, int pageSize = 12, string? searchQuery = null, int? categoryId = null, decimal? minPrice = null, decimal? maxPrice = null)
+        public async Task<IActionResult> Index(
+            int page = 1,
+            int pageSize = 12,
+            string? searchQuery = null,
+            int? categoryId = null,
+            decimal? minPrice = null,
+            decimal? maxPrice = null,
+            int? minRating = null)
         {
             try
             {
@@ -49,6 +56,19 @@ namespace mvc_razor.Controllers
                     query = query.Where(p => p.Price <= (long)maxPrice.Value);
                 }
 
+                // Apply rating filter (minimum average rating)
+                if (minRating.HasValue && minRating.Value > 0)
+                {
+                    query = query.Where(p =>
+                        _context.Reviews
+                            .Where(r => r.ProductId == p.ProductId && !r.IsDeleted)
+                            .Any())
+                        .Where(p =>
+                            _context.Reviews
+                                .Where(r => r.ProductId == p.ProductId && !r.IsDeleted)
+                                .Average(r => r.Rating) >= minRating.Value);
+                }
+
                 // Get total count after filters
                 var totalProducts = await query.CountAsync();
 
@@ -68,6 +88,7 @@ namespace mvc_razor.Controllers
                 ViewBag.MinPrice = minPrice;
                 ViewBag.MaxPrice = maxPrice;
                 ViewBag.SearchQuery = searchQuery;
+                ViewBag.MinRating = minRating;
 
                 // Create view model
                 var viewModel = new ProductListViewModel
@@ -138,9 +159,10 @@ namespace mvc_razor.Controllers
             }
 
             // Redirect to Index with search query parameter
-            return RedirectToAction("Index", new { 
-                searchQuery = q, 
-                page = page, 
+            return RedirectToAction("Index", new
+            {
+                searchQuery = q,
+                page = page,
                 pageSize = pageSize,
                 categoryId = categoryId,
                 minPrice = minPrice,

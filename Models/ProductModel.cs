@@ -44,4 +44,6 @@ public class ProductModel
 
     public InventoryModel? Inventory { get; set; }
     public ICollection<OrderItemModel> OrderItems { get; set; } = new List<OrderItemModel>();
+
+    public ICollection<ReviewModel> Reviews { get; set; } = new List<ReviewModel>();
 }
