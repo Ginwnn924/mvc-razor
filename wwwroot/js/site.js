@@ -401,7 +401,7 @@ function getActiveFilters() {
 
   // Get selected category (if using radio buttons)
   const categoryRadio = document.querySelector('input[name="category"]:checked');
-  if (categoryRadio && categoryRadio.value) {
+  if (categoryRadio && categoryRadio.value && categoryRadio.value !== "") {
     filters.categoryId = parseInt(categoryRadio.value);
   }
 

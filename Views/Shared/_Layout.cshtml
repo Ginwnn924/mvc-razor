@@ -73,26 +73,30 @@
                             <i class="fas fa-filter mr-2"></i>Thể loại
                         </h3>
                         <div class="space-y-2">
+                            <!-- Option "Tất cả" -->
                             <label class="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded">
-                                <input type="checkbox" class="w-4 h-4 text-blue-600 rounded" />
-                                <span class="ml-3 text-gray-700">Đồ uống</span>
+                                <input type="radio" name="category" value="" 
+                                       data-filter="category"
+                                       @(ViewBag.SelectedCategoryId == null ? "checked" : "") 
+                                       class="w-4 h-4 text-blue-600" />
+                                <span class="ml-3 text-gray-700">Tất cả</span>
                             </label>
-                            <label class="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded">
-                                <input type="checkbox" class="w-4 h-4 text-blue-600 rounded" />
-                                <span class="ml-3 text-gray-700">Bánh kẹo</span>
-                            </label>
-                            <label class="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded">
-                                <input type="checkbox" class="w-4 h-4 text-blue-600 rounded" />
-                                <span class="ml-3 text-gray-700">Gia vị</span>
-                            </label>
-                            <label class="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded">
-                                <input type="checkbox" class="w-4 h-4 text-blue-600 rounded" />
-                                <span class="ml-3 text-gray-700">Đồ gia dụng</span>
-                            </label>
-                            <label class="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded">
-                                <input type="checkbox" class="w-4 h-4 text-blue-600 rounded" />
-                                <span class="ml-3 text-gray-700">Mỹ phẩm</span>
-                            </label>
+                            
+                            <!-- Loop qua categories từ database -->
+                            @if (ViewBag.Categories != null)
+                            {
+                                @foreach (var category in ViewBag.Categories)
+                                {
+                                    <label class="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded">
+                                        <input type="radio" name="category" 
+                                               value="@category.CategoryId"
+                                               data-filter="category"
+                                               @(ViewBag.SelectedCategoryId != null && ViewBag.SelectedCategoryId == category.CategoryId ? "checked" : "")
+                                               class="w-4 h-4 text-blue-600" />
+                                        <span class="ml-3 text-gray-700">@category.CategoryName</span>
+                                    </label>
+                                }
+                            }
                         </div>
                     </div>
 
