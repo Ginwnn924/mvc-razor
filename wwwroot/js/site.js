@@ -283,6 +283,32 @@ function initializeEventListeners() {
     button.addEventListener("change", handleFilter);
   });
 
+  // Ensure only one rating checkbox is selected at a time
+  const ratingCheckboxes = document.querySelectorAll('input[data-filter="rating"]');
+  ratingCheckboxes.forEach((checkbox) => {
+    checkbox.addEventListener("change", function () {
+      if (this.checked) {
+        ratingCheckboxes.forEach((cb) => {
+          if (cb !== this) {
+            cb.checked = false;
+          }
+        });
+      }
+    });
+  });
+
+  // Toggle custom price inputs
+  const priceRadios = document.querySelectorAll('input[name="price"]');
+  priceRadios.forEach((radio) => {
+    radio.addEventListener("change", toggleCustomPriceInputs);
+  });
+
+  // Apply custom price button
+  const applyCustomPriceBtn = document.getElementById("applyCustomPrice");
+  if (applyCustomPriceBtn) {
+    applyCustomPriceBtn.addEventListener("click", handleApplyCustomPrice);
+  }
+
   const clearFiltersBtn = document.querySelector("[data-clear-filters]");
   if (clearFiltersBtn) {
     clearFiltersBtn.addEventListener("click", handleClearFilters);
@@ -294,6 +320,12 @@ function initializeEventListeners() {
   if (searchForm) {
     searchForm.addEventListener("submit", handleSearch);
   }
+
+  // Initialize custom price inputs visibility
+  toggleCustomPriceInputs();
+
+  // Khởi tạo lại event cho danh sách sản phẩm (phục vụ lần load đầu tiên)
+  rebindProductListEvents();
 }
 
 function handleAddToCart(event) {
@@ -347,57 +379,293 @@ function handleWishlist(event) {
   updateWishlistCount();
 }
 
+function toggleCustomPriceInputs() {
+  const customInputs = document.getElementById("customPriceInputs");
+  const customRadio = document.getElementById("priceCustomRadio");
+  
+  if (customInputs && customRadio) {
+    if (customRadio.checked) {
+      customInputs.classList.remove("hidden");
+    } else {
+      customInputs.classList.add("hidden");
+    }
+  }
+}
+
+function handleApplyCustomPrice() {
+  const filters = getActiveFilters();
+  applyFilters(filters);
+}
+
 function handleFilter(event) {
+  // If custom radio is selected, don't auto-apply (wait for Apply button)
+  const customRadio = document.getElementById("priceCustomRadio");
+  if (customRadio && customRadio.checked) {
+    toggleCustomPriceInputs();
+    return;
+  }
+  
   const filters = getActiveFilters();
   applyFilters(filters);
 }
 
 function getActiveFilters() {
   const filters = {
-    categories: [],
-    priceRange: null,
-    rating: [],
+    categoryId: null,
+    minPrice: null,
+    maxPrice: null,
+    minRating: null,
+    page: 1,
   };
 
-  document
-    .querySelectorAll('input[type="checkbox"]:checked')
-    .forEach((checkbox) => {
-      const label = checkbox.nextElementSibling;
-      if (
-        label &&
-        (label.textContent.includes("Electronics") ||
-          label.textContent.includes("Clothing") ||
-          label.textContent.includes("Home") ||
-          label.textContent.includes("Sports") ||
-          label.textContent.includes("Books"))
-      ) {
-        filters.categories.push(label.textContent.trim());
-      }
-    });
+  // Get selected category (if using radio buttons)
+  const categoryRadio = document.querySelector('input[name="category"]:checked');
+  if (categoryRadio && categoryRadio.value && categoryRadio.value !== "") {
+    filters.categoryId = parseInt(categoryRadio.value);
+  }
 
+  // Get selected price range
   const priceRadio = document.querySelector('input[name="price"]:checked');
   if (priceRadio) {
-    filters.priceRange = priceRadio.nextElementSibling.textContent.trim();
+    const priceValue = priceRadio.value;
+    
+    if (priceValue === "custom") {
+      // Get custom price inputs
+      const customMinPrice = document.getElementById("customMinPrice");
+      const customMaxPrice = document.getElementById("customMaxPrice");
+      
+      if (customMinPrice && customMinPrice.value) {
+        filters.minPrice = parseFloat(customMinPrice.value);
+      }
+      if (customMaxPrice && customMaxPrice.value) {
+        filters.maxPrice = parseFloat(customMaxPrice.value);
+      }
+    } else if (priceValue) {
+      // Parse predefined ranges
+      if (priceValue === "0-50000") {
+        filters.minPrice = 0;
+        filters.maxPrice = 50000;
+      } else if (priceValue === "50000-200000") {
+        filters.minPrice = 50000;
+        filters.maxPrice = 200000;
+      } else if (priceValue === "200000-1000000") {
+        filters.minPrice = 200000;
+        filters.maxPrice = 1000000;
+      } else if (priceValue === "1000000-") {
+        filters.minPrice = 1000000;
+        filters.maxPrice = null;
+      }
+    }
   }
+
+  // Get selected rating (only one allowed)
+  const ratingCheckboxes = document.querySelectorAll('input[data-filter="rating"]');
+  ratingCheckboxes.forEach((checkbox) => {
+    if (checkbox.checked) {
+      const ratingValue = parseInt(checkbox.value);
+      if (!isNaN(ratingValue)) {
+        filters.minRating = ratingValue;
+      }
+    }
+  });
 
   return filters;
 }
 
 function applyFilters(filters) {
-  console.log("Applying filters:", filters);
+  // Validate custom price inputs
+  if (filters.minPrice !== null && filters.maxPrice !== null && filters.minPrice > filters.maxPrice) {
+    showNotification("Giá tối thiểu phải nhỏ hơn giá tối đa!", "error");
+    return;
+  }
+
+  if (filters.minPrice !== null && filters.minPrice < 0) {
+    showNotification("Giá tối thiểu phải lớn hơn hoặc bằng 0!", "error");
+    return;
+  }
+
+  if (filters.maxPrice !== null && filters.maxPrice < 0) {
+    showNotification("Giá tối đa phải lớn hơn hoặc bằng 0!", "error");
+    return;
+  }
+
+  // Build query parameters
+  const params = new URLSearchParams();
+  
+  // Preserve search query if exists
+  const currentUrl = new URL(window.location.href);
+  const searchQuery = currentUrl.searchParams.get("searchQuery");
+  if (searchQuery) {
+    params.append("searchQuery", searchQuery);
+  }
+
+  // Add filter parameters
+  if (filters.categoryId) {
+    params.append("categoryId", filters.categoryId);
+  }
+  if (filters.minPrice !== null) {
+    params.append("minPrice", filters.minPrice);
+  }
+  if (filters.maxPrice !== null) {
+    params.append("maxPrice", filters.maxPrice);
+  }
+
+  if (filters.minRating !== null) {
+    params.append("minRating", filters.minRating);
+  }
+
+  if (filters.page && filters.page > 1) {
+    params.append("page", filters.page);
+  }
+
+  // Build URLs
+  const origin = window.location.origin;
+  const baseIndexUrl = `${origin}/Home/Index`;
+  const baseFilterUrl = `${origin}/Home/FilterProducts`;
+  const queryString = params.toString();
+  const finalIndexUrl = queryString ? `${baseIndexUrl}?${queryString}` : baseIndexUrl;
+  const finalFilterUrl = queryString ? `${baseFilterUrl}?${queryString}` : baseFilterUrl;
+
+  // Update URL without full reload
+  if (window.history && window.history.pushState) {
+    window.history.pushState(null, "", finalIndexUrl);
+  }
+
+  const container = document.getElementById("productListContainer");
+  if (!container) {
+    // Fallback: nếu không có container, reload trang như cũ
+    window.location.href = finalIndexUrl;
+    return;
+  }
+
+  // Hiển thị trạng thái loading nhẹ
+  container.classList.add("opacity-50");
+
+  fetch(finalFilterUrl, {
+    headers: {
+      "X-Requested-With": "XMLHttpRequest",
+    },
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+      return response.text();
+    })
+    .then((html) => {
+      container.innerHTML = html;
+      container.classList.remove("opacity-50");
+
+      // Re-bind event listeners cho các nút trong danh sách mới
+      rebindProductListEvents();
+    })
+    .catch((error) => {
+      container.classList.remove("opacity-50");
+      console.error("Error loading products:", error);
+      showNotification("Không thể tải sản phẩm. Vui lòng thử lại!", "error");
+    });
+}
+
+function rebindProductListEvents() {
+  // Add to cart buttons trong danh sách sản phẩm
+  document.querySelectorAll(".add-to-cart-btn").forEach((btn) => {
+    btn.addEventListener("click", function (e) {
+      e.preventDefault();
+      const productId = this.dataset.productId;
+      const productName = this.dataset.productName;
+      const productPrice = this.dataset.productPrice;
+      const img = this.closest(".bg-white").querySelector("img").src;
+
+      let cart = JSON.parse(localStorage.getItem("cart")) || [];
+      const existingItem = cart.find((item) => item.id === productId);
+
+      if (existingItem) {
+        existingItem.quantity += 1;
+      } else {
+        cart.push({
+          id: productId,
+          name: productName,
+          image: img,
+          price: productPrice,
+          quantity: 1,
+        });
+      }
+
+      localStorage.setItem("cart", JSON.stringify(cart));
+      showNotification(`${productName} added to cart!`, "success");
+      updateCartCount();
+    });
+  });
+
+  // Wishlist buttons
+  document.querySelectorAll(".wishlist-btn").forEach((btn) => {
+    btn.addEventListener("click", function (e) {
+      e.preventDefault();
+      const icon = this.querySelector("i");
+      icon.classList.toggle("fas");
+      icon.classList.toggle("far");
+      icon.classList.toggle("text-red-600");
+    });
+  });
+
+  // Pagination links (AJAX)
+  const productListContainer = document.getElementById("productListContainer");
+  if (productListContainer) {
+    productListContainer
+      .querySelectorAll("[data-page-link]")
+      .forEach((link) => {
+        link.addEventListener("click", function (e) {
+          e.preventDefault();
+          const page = parseInt(this.dataset.page);
+          if (!isNaN(page)) {
+            const filters = getActiveFilters();
+            filters.page = page;
+            applyFilters(filters);
+          }
+        });
+      });
+  }
 }
 
 function handleClearFilters(event) {
   event.preventDefault();
 
-  document.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
-    checkbox.checked = false;
-  });
+  // Uncheck all radio buttons
   document.querySelectorAll('input[type="radio"]').forEach((radio) => {
     radio.checked = false;
   });
 
-  showNotification("Filters cleared!", "info");
+  // Uncheck all rating checkboxes
+  document.querySelectorAll('input[data-filter="rating"]').forEach((checkbox) => {
+    checkbox.checked = false;
+  });
+
+  // Check "All" options
+  const allCategoryRadio = document.querySelector('input[name="category"][value=""]');
+  if (allCategoryRadio) {
+    allCategoryRadio.checked = true;
+  }
+  const allPriceRadio = document.querySelector('input[name="price"][value=""]');
+  if (allPriceRadio) {
+    allPriceRadio.checked = true;
+  }
+
+  // Clear custom price inputs
+  const customMinPrice = document.getElementById("customMinPrice");
+  const customMaxPrice = document.getElementById("customMaxPrice");
+  if (customMinPrice) customMinPrice.value = "";
+  if (customMaxPrice) customMaxPrice.value = "";
+
+  // Hide custom inputs
+  const customInputs = document.getElementById("customPriceInputs");
+  if (customInputs) {
+    customInputs.classList.add("hidden");
+  }
+
+  // Áp dụng lại filter mặc định bằng Ajax (không reload trang)
+  const filters = getActiveFilters();
+  filters.page = 1;
+  applyFilters(filters);
 }
 
 function handleSearch(event) {

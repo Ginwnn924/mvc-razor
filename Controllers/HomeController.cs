@@ -17,17 +17,63 @@ namespace mvc_razor.Controllers
             _context = context;
         }
 
-        public async Task<IActionResult> Index(int page = 1, int pageSize = 12)
+        public async Task<IActionResult> Index(
+            int page = 1,
+            int pageSize = 12,
+            string? searchQuery = null,
+            int? categoryId = null,
+            decimal? minPrice = null,
+            decimal? maxPrice = null,
+            int? minRating = null)
         {
             try
             {
-                // Get total count
-                var totalProducts = await _context.Products.CountAsync();
-
-                // Get products with pagination
-                var products = await _context.Products
+                // Start with base query
+                var query = _context.Products
                     .Include(p => p.Category)
                     .Include(p => p.Inventory)
+                    .AsQueryable();
+
+                // Apply search filter
+                if (!string.IsNullOrWhiteSpace(searchQuery))
+                {
+                    query = query.Where(p => p.ProductName.Contains(searchQuery));
+                }
+
+                // Apply category filter
+                if (categoryId.HasValue && categoryId.Value > 0)
+                {
+                    query = query.Where(p => p.CategoryId == categoryId.Value);
+                }
+
+                // Apply price filters
+                if (minPrice.HasValue)
+                {
+                    query = query.Where(p => p.Price >= (long)minPrice.Value);
+                }
+                if (maxPrice.HasValue)
+                {
+                    query = query.Where(p => p.Price <= (long)maxPrice.Value);
+                }
+
+                // Apply rating filter (minimum average rating)
+                if (minRating.HasValue && minRating.Value > 0)
+                {
+                    query = query.Where(p =>
+                        _context.Reviews
+                            .Where(r => r.ProductId == p.ProductId && !r.IsDeleted)
+                            .Any())
+                        .Where(p =>
+                            _context.Reviews
+                                .Where(r => r.ProductId == p.ProductId && !r.IsDeleted)
+                                .Average(r => r.Rating) >= minRating.Value);
+                }
+
+                // Get total count after filters
+                var totalProducts = await query.CountAsync();
+
+                // Get products with pagination
+                var products = await query
                     .Where(p => p.IsDeleted == false)
                     .OrderByDescending(p => p.CreatedAt)
                     .Skip((page - 1) * pageSize)
@@ -47,6 +93,14 @@ namespace mvc_razor.Controllers
                     .ToListAsync();
 
 
+                // Pass data to ViewBag for sidebar and search box
+                ViewBag.Categories = categories;
+                ViewBag.SelectedCategoryId = categoryId;
+                ViewBag.MinPrice = minPrice;
+                ViewBag.MaxPrice = maxPrice;
+                ViewBag.SearchQuery = searchQuery;
+                ViewBag.MinRating = minRating;
+
                 // Create view model
                 var viewModel = new ProductListViewModel
                 {
@@ -55,7 +109,11 @@ namespace mvc_razor.Controllers
                     BestSaler = bestSellerProducts,
                     PageSize = pageSize,
                     TotalProducts = totalProducts,
-                    TotalPages = (int)Math.Ceiling((double)totalProducts / pageSize)
+                    TotalPages = (int)Math.Ceiling((double)totalProducts / pageSize),
+                    SearchQuery = searchQuery,
+                    SelectedCategoryId = categoryId,
+                    MinPrice = minPrice,
+                    MaxPrice = maxPrice
                 };
 
                 return View(viewModel);
@@ -65,6 +123,27 @@ namespace mvc_razor.Controllers
                 _logger.LogError(ex, "Error loading products");
                 return View(new ProductListViewModel { Products = new List<ProductModel>() });
             }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> FilterProducts(
+            int page = 1,
+            int pageSize = 12,
+            string? searchQuery = null,
+            int? categoryId = null,
+            decimal? minPrice = null,
+            decimal? maxPrice = null,
+            int? minRating = null)
+        {
+            // Tái sử dụng toàn bộ logic trong Index để đảm bảo kết quả đồng nhất
+            var result = await Index(page, pageSize, searchQuery, categoryId, minPrice, maxPrice, minRating) as ViewResult;
+
+            if (result?.Model is ProductListViewModel viewModel)
+            {
+                return PartialView("_ProductList", viewModel);
+            }
+
+            return BadRequest("Unable to load products");
         }
 
         public async Task<IActionResult> Details(int id)
@@ -104,16 +183,23 @@ namespace mvc_razor.Controllers
             }
         }
 
-        public IActionResult Search(string q)
+        public IActionResult Search(string q, int page = 1, int pageSize = 12, int? categoryId = null, decimal? minPrice = null, decimal? maxPrice = null)
         {
             if (string.IsNullOrWhiteSpace(q))
             {
                 return RedirectToAction("Index");
             }
 
-            // TODO: Implement search functionality with database
-            ViewData["SearchQuery"] = q;
-            return View("Index");
+            // Redirect to Index with search query parameter
+            return RedirectToAction("Index", new
+            {
+                searchQuery = q,
+                page = page,
+                pageSize = pageSize,
+                categoryId = categoryId,
+                minPrice = minPrice,
+                maxPrice = maxPrice
+            });
         }
 
         public IActionResult Privacy()

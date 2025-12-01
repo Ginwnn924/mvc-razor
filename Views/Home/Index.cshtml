@@ -356,6 +356,58 @@
             }
         </div>
 
+<!-- Sort and View Options -->
+<div class="flex justify-between items-center mb-6">
+    <div>
+        <h2 class="text-2xl font-bold text-gray-800">Featured Products</h2>
+        <p class="text-gray-600">
+            Showing @((Model.CurrentPage - 1) * Model.PageSize + 1)-@Math.Min(Model.CurrentPage * Model.PageSize,
+                        Model.TotalProducts) of @Model.TotalProducts products
+        </p>
+    </div>
+    <div class="flex gap-4">
+        <select class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            id="sortSelect">
+            <option value="newest">Sort by: Newest</option>
+            <option value="price-low">Price: Low to High</option>
+            <option value="price-high">Price: High to Low</option>
+            <option value="name">Product Name</option>
+        </select>
+    </div>
+</div>
+
+<div id="productListContainer">
+    @await Html.PartialAsync("_ProductList", Model)
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Cập nhật số lượng giỏ hàng khi trang load
+        updateCartCount();
+
+        // Add to cart functionality
+        document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                const productId = this.dataset.productId;
+                const productName = this.dataset.productName;
+                const productPrice = this.dataset.productPrice;
+                const img = this.closest('.bg-white').querySelector('img').src; // phần tử cha gần nhất
+                // Add to cart logic
+                let cart = JSON.parse(localStorage.getItem('cart')) || [];
+                const existingItem = cart.find(item => item.id === productId);
+
+                if (existingItem) {
+                    existingItem.quantity += 1;
+                } else {
+                    cart.push({
+                        id: productId,
+                        name: productName,
+                        image: img,
+                        price: productPrice,
+                        quantity: 1
+                    });
+                }
         <!-- Pagination -->
         @if (Model.TotalPages > 1)
         {
