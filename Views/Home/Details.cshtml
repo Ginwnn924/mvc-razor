@@ -378,7 +378,7 @@
 
         function updateCartCount() {
             const cart = JSON.parse(localStorage.getItem('cart')) || [];
-            const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
+            const cartCount = cart.length; // Đếm số sản phẩm khác nhau
             const cartBadges = document.querySelectorAll('[data-cart-count]');
             cartBadges.forEach(badge => {
                 badge.textContent = cartCount;

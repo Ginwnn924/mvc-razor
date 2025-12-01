@@ -42,6 +42,9 @@ public class ProductModel
     public CategoryModel? Category { get; set; }
 
 
+    [Column("is_deleted")]
+    public bool IsDeleted { get; set; }
+
     public InventoryModel? Inventory { get; set; }
     public ICollection<OrderItemModel> OrderItems { get; set; } = new List<OrderItemModel>();
 

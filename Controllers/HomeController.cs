@@ -74,13 +74,24 @@ namespace mvc_razor.Controllers
 
                 // Get products with pagination
                 var products = await query
+                    .Where(p => p.IsDeleted == false)
                     .OrderByDescending(p => p.CreatedAt)
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
 
-                // Get all categories for filter
-                var categories = await _context.Categories.ToListAsync();
+
+                var bestSellerProducts = await _context.Products
+                    .FromSqlRaw(@"
+                        SELECT p.* FROM products p 
+                        JOIN order_items oi ON p.product_id = oi.product_id 
+                        GROUP BY p.product_id 
+                        ORDER BY COUNT(*) DESC 
+                        LIMIT 4")
+                    .Include(p => p.Category)
+                    .Include(p => p.Inventory)
+                    .ToListAsync();
+
 
                 // Pass data to ViewBag for sidebar and search box
                 ViewBag.Categories = categories;
@@ -94,8 +105,8 @@ namespace mvc_razor.Controllers
                 var viewModel = new ProductListViewModel
                 {
                     Products = products,
-                    Categories = categories,
                     CurrentPage = page,
+                    BestSaler = bestSellerProducts,
                     PageSize = pageSize,
                     TotalProducts = totalProducts,
                     TotalPages = (int)Math.Ceiling((double)totalProducts / pageSize),
