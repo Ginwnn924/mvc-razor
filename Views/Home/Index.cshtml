@@ -1,12 +1,13 @@
 @model ProductListViewModel
 
 @{
-    ViewData["Title"] = "Trang chủ";
+    ViewData["Title"] = "Home";
 }
 
 <div class="flex gap-6">
     <!-- Sidebar -->
-    <aside class="w-64 flex-shrink-0" id="sidebar">
+    <aside class="w-64 flex-shrink-0" id="sidebar"
+        style="@(ViewContext.RouteData.Values["action"]?.ToString() == "Details" || ViewContext.RouteData.Values["action"]?.ToString() == "Checkout" ? "display: none;" : "")">
         <div class="bg-white rounded-lg shadow-md p-6 sticky top-24">
             <!-- Filter by Category -->
             <div class="mb-6">
@@ -14,26 +15,26 @@
                     <i class="fas fa-filter mr-2"></i>Thể loại
                 </h3>
                 <div class="space-y-2">
+                    <!-- Option "Tất cả" -->
                     <label class="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded">
-                        <input type="checkbox" class="w-4 h-4 text-blue-600 rounded" />
-                        <span class="ml-3 text-gray-700">Đồ uống</span>
+                        <input type="radio" name="category" value="" data-filter="category" @(ViewBag.SelectedCategoryId
+                                                                                                                        == null ? "checked" : "") class="w-4 h-4 text-blue-600" />
+                        <span class="ml-3 text-gray-700">Tất cả</span>
                     </label>
-                    <label class="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded">
-                        <input type="checkbox" class="w-4 h-4 text-blue-600 rounded" />
-                        <span class="ml-3 text-gray-700">Bánh kẹo</span>
-                    </label>
-                    <label class="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded">
-                        <input type="checkbox" class="w-4 h-4 text-blue-600 rounded" />
-                        <span class="ml-3 text-gray-700">Gia vị</span>
-                    </label>
-                    <label class="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded">
-                        <input type="checkbox" class="w-4 h-4 text-blue-600 rounded" />
-                        <span class="ml-3 text-gray-700">Đồ gia dụng</span>
-                    </label>
-                    <label class="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded">
-                        <input type="checkbox" class="w-4 h-4 text-blue-600 rounded" />
-                        <span class="ml-3 text-gray-700">Mỹ phẩm</span>
-                    </label>
+
+                    <!-- Loop qua categories từ database -->
+                    @if (ViewBag.Categories != null)
+                    {
+                        @foreach (var category in ViewBag.Categories)
+                        {
+                            <label class="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded">
+                                <input type="radio" name="category" value="@category.CategoryId" data-filter="category"
+                                    @(ViewBag.SelectedCategoryId != null && ViewBag.SelectedCategoryId == category.CategoryId ?
+                                                                "checked" : "") class="w-4 h-4 text-blue-600" />
+                                <span class="ml-3 text-gray-700">@category.CategoryName</span>
+                            </label>
+                        }
+                    }
                 </div>
             </div>
 
@@ -45,22 +46,72 @@
                     <i class="fas fa-dollar-sign mr-2"></i>Mức giá
                 </h3>
                 <div class="space-y-2">
+                    @{
+                        var minPrice = ViewBag.MinPrice as decimal?;
+                        var maxPrice = ViewBag.MaxPrice as decimal?;
+                        var priceValue = "";
+                        var isCustomPrice = false;
+
+                        // Check if price matches predefined ranges
+                        if (minPrice == 0 && maxPrice == 50000) { priceValue = "0-50000"; }
+                        else if (minPrice == 50000 && maxPrice == 200000) { priceValue = "50000-200000"; }
+                        else if (minPrice == 200000 && maxPrice == 1000000) { priceValue = "200000-1000000"; }
+                        else if (minPrice == 1000000 && maxPrice == null) { priceValue = "1000000-"; }
+                        else if (minPrice.HasValue || maxPrice.HasValue)
+                        {
+                            priceValue = "custom";
+                            isCustomPrice = true;
+                        }
+                    }
                     <label class="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded">
-                        <input type="radio" name="price" class="w-4 h-4 text-blue-600" />
+                        <input type="radio" name="price" value="" class="w-4 h-4 text-blue-600" data-filter="price"
+                            @(priceValue == "" ? "checked" : "") />
+                        <span class="ml-3 text-gray-700">Tất cả</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded">
+                        <input type="radio" name="price" value="0-50000" class="w-4 h-4 text-blue-600"
+                            data-filter="price" @(priceValue == "0-50000" ? "checked" : "") />
                         <span class="ml-3 text-gray-700">Dưới 50.000đ</span>
                     </label>
                     <label class="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded">
-                        <input type="radio" name="price" class="w-4 h-4 text-blue-600" />
+                        <input type="radio" name="price" value="50000-200000" class="w-4 h-4 text-blue-600"
+                            data-filter="price" @(priceValue == "50000-200000" ? "checked" : "") />
                         <span class="ml-3 text-gray-700">Từ 50.000đ - 200.000đ</span>
                     </label>
                     <label class="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded">
-                        <input type="radio" name="price" class="w-4 h-4 text-blue-600" />
-                        <span class="ml-3 text-gray-700">Trên 200.000đ</span>
+                        <input type="radio" name="price" value="200000-1000000" class="w-4 h-4 text-blue-600"
+                            data-filter="price" @(priceValue == "200000-1000000" ? "checked" : "") />
+                        <span class="ml-3 text-gray-700">Từ 200.000đ - 1.000.000đ</span>
                     </label>
                     <label class="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded">
-                        <input type="radio" name="price" class="w-4 h-4 text-blue-600" />
+                        <input type="radio" name="price" value="1000000-" class="w-4 h-4 text-blue-600"
+                            data-filter="price" @(priceValue == "1000000-" ? "checked" : "") />
                         <span class="ml-3 text-gray-700">Trên 1.000.000đ</span>
                     </label>
+                    <label class="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded">
+                        <input type="radio" name="price" value="custom" id="priceCustomRadio"
+                            class="w-4 h-4 text-blue-600" data-filter="price" @(priceValue == "custom" ? "checked" :
+                                                                                                          "") />
+                        <span class="ml-3 text-gray-700">Tùy chỉnh</span>
+                    </label>
+
+                    <!-- Custom Price Inputs -->
+                    <div id="customPriceInputs" class="ml-7 mt-2 @(isCustomPrice ? "" : "hidden")">
+                        <div class="flex flex-col gap-2">
+                            <div class="flex gap-2">
+                                <input type="number" id="customMinPrice" placeholder="Từ (đ)" min="0" step="1000"
+                                    value="@(minPrice.HasValue && isCustomPrice ? minPrice.Value.ToString("0") : "")"
+                                    class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                <input type="number" id="customMaxPrice" placeholder="Đến (đ)" min="0" step="1000"
+                                    value="@(maxPrice.HasValue && isCustomPrice ? maxPrice.Value.ToString("0") : "")"
+                                    class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <button type="button" id="applyCustomPrice"
+                                class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition text-sm font-semibold">
+                                Áp dụng
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -71,9 +122,13 @@
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">
                     <i class="fas fa-star mr-2"></i>Rating
                 </h3>
+                @{
+                    int? selectedMinRating = ViewBag.MinRating as int?;
+                }
                 <div class="space-y-2">
                     <label class="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded">
-                        <input type="checkbox" class="w-4 h-4 text-blue-600 rounded" />
+                        <input type="checkbox" name="rating" value="5" data-filter="rating"
+                            class="w-4 h-4 text-blue-600 rounded" @(selectedMinRating == 5 ? "checked" : "") />
                         <span class="ml-3 text-yellow-500">
                             <i class="fas fa-star"></i>
                             <i class="fas fa-star"></i>
@@ -83,7 +138,8 @@
                         </span>
                     </label>
                     <label class="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded">
-                        <input type="checkbox" class="w-4 h-4 text-blue-600 rounded" />
+                        <input type="checkbox" name="rating" value="4" data-filter="rating"
+                            class="w-4 h-4 text-blue-600 rounded" @(selectedMinRating == 4 ? "checked" : "") />
                         <span class="ml-3 text-yellow-500">
                             <i class="fas fa-star"></i>
                             <i class="fas fa-star"></i>
@@ -93,7 +149,8 @@
                         </span>
                     </label>
                     <label class="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded">
-                        <input type="checkbox" class="w-4 h-4 text-blue-600 rounded" />
+                        <input type="checkbox" name="rating" value="3" data-filter="rating"
+                            class="w-4 h-4 text-blue-600 rounded" @(selectedMinRating == 3 ? "checked" : "") />
                         <span class="ml-3 text-yellow-500">
                             <i class="fas fa-star"></i>
                             <i class="fas fa-star"></i>
@@ -108,12 +165,12 @@
             <hr class="my-6" />
 
             <!-- Clear Filters -->
-            <button class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold">
+            <button class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold"
+                data-clear-filters>
                 Clear Filters
             </button>
         </div>
     </aside>
-
     <!-- Main Content Area -->
     <main class="flex-1">
         <!-- Hero Section -->
@@ -141,7 +198,7 @@
                             <i class="fas fa-fire text-white text-xl"></i>
                         </div>
                         <div>
-                            <h2 class="text-2xl font-bold text-gray-800">BEST SALE</h2>
+                            <h2 class="text-2xl font-bold text-gray-800">Best Sellers</h2>
                             <p class="text-gray-500 text-sm">Sản phẩm bán chạy nhất tuần này</p>
                         </div>
                     </div>
@@ -160,7 +217,7 @@
                         var stockQuantity = product.Inventory?.Quantity ?? 0;
                         var isInStock = stockQuantity > 0;
                         var rankNum = rank + 1;
-                        var rankColor = rankNum == 1 ? "from-yellow-400 to-yellow-600" : rankNum == 2 ? "from-gray-300     to-gray-500" :
+                        var rankColor = rankNum == 1 ? "from-yellow-400 to-yellow-600" : rankNum == 2 ? "from-gray-300             to-gray-500" :
                         rankNum == 3 ? "from-amber-600 to-amber-800" : "from-blue-400 to-blue-600";
 
                         <div
@@ -259,21 +316,21 @@
         <!-- Sort and View Options -->
         <div class="flex justify-between items-center mb-6">
             <div>
-                <h2 class="text-2xl font-bold text-gray-800">Sản phẩm nổi bậc</h2>
+                <h2 class="text-2xl font-bold text-gray-800">Featured Products</h2>
                 <p class="text-gray-600">
-                    Hiển thị @((Model.CurrentPage - 1) * Model.PageSize + 1)-@Math.Min(Model.CurrentPage *
+                    Showing @((Model.CurrentPage - 1) * Model.PageSize + 1)-@Math.Min(Model.CurrentPage *
                                         Model.PageSize,
-                                        Model.TotalProducts) trong số @Model.TotalProducts sản phẩm
+                                        Model.TotalProducts) of @Model.TotalProducts products
                 </p>
             </div>
             <div class="flex gap-4">
                 <select
                     class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     id="sortSelect">
-                    <option value="newest">Mới nhất</option>
-                    <option value="price-low">Giá thấp đến cao</option>
-                    <option value="price-high">Giá cao đến thấp</option>
-                    <option value="name">Tên sản phẩm</option>
+                    <option value="newest">Sort by: Newest</option>
+                    <option value="price-low">Price: Low to High</option>
+                    <option value="price-high">Price: High to Low</option>
+                    <option value="name">Product Name</option>
                 </select>
             </div>
         </div>
@@ -356,58 +413,6 @@
             }
         </div>
 
-<!-- Sort and View Options -->
-<div class="flex justify-between items-center mb-6">
-    <div>
-        <h2 class="text-2xl font-bold text-gray-800">Featured Products</h2>
-        <p class="text-gray-600">
-            Showing @((Model.CurrentPage - 1) * Model.PageSize + 1)-@Math.Min(Model.CurrentPage * Model.PageSize,
-                        Model.TotalProducts) of @Model.TotalProducts products
-        </p>
-    </div>
-    <div class="flex gap-4">
-        <select class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            id="sortSelect">
-            <option value="newest">Sort by: Newest</option>
-            <option value="price-low">Price: Low to High</option>
-            <option value="price-high">Price: High to Low</option>
-            <option value="name">Product Name</option>
-        </select>
-    </div>
-</div>
-
-<div id="productListContainer">
-    @await Html.PartialAsync("_ProductList", Model)
-</div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // Cập nhật số lượng giỏ hàng khi trang load
-        updateCartCount();
-
-        // Add to cart functionality
-        document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
-            btn.addEventListener('click', function (e) {
-                e.preventDefault();
-                const productId = this.dataset.productId;
-                const productName = this.dataset.productName;
-                const productPrice = this.dataset.productPrice;
-                const img = this.closest('.bg-white').querySelector('img').src; // phần tử cha gần nhất
-                // Add to cart logic
-                let cart = JSON.parse(localStorage.getItem('cart')) || [];
-                const existingItem = cart.find(item => item.id === productId);
-
-                if (existingItem) {
-                    existingItem.quantity += 1;
-                } else {
-                    cart.push({
-                        id: productId,
-                        name: productName,
-                        image: img,
-                        price: productPrice,
-                        quantity: 1
-                    });
-                }
         <!-- Pagination -->
         @if (Model.TotalPages > 1)
         {
@@ -442,66 +447,76 @@
                 }
             </div>
         }
-
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                // Cập nhật số lượng giỏ hàng khi trang load
-                updateCartCount();
-
-                // Add to cart functionality
-                document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
-                    btn.addEventListener('click', function (e) {
-                        e.preventDefault();
-                        const productId = this.dataset.productId;
-                        const productName = this.dataset.productName;
-                        const productPrice = this.dataset.productPrice;
-                        const img = this.closest('.bg-white').querySelector('img').src; // phần tử cha gần nhất
-                        // Add to cart logic
-                        let cart = JSON.parse(localStorage.getItem('cart')) || [];
-                        const existingItem = cart.find(item => item.id === productId);
-
-                        if (existingItem) {
-                            existingItem.quantity += 1;
-                        } else {
-                            cart.push({
-                                id: productId,
-                                name: productName,
-                                image: img,
-                                price: productPrice,
-                                quantity: 1
-                            });
-                        }
-
-                        localStorage.setItem('cart', JSON.stringify(cart));
-
-                        // Show notification
-                        showNotification(`${productName} added to cart!`, 'success');
-
-                        // Update cart count
-                        updateCartCount();
-                    });
-                });
-
-                // Wishlist functionality
-                document.querySelectorAll('.wishlist-btn').forEach(btn => {
-                    btn.addEventListener('click', function (e) {
-                        e.preventDefault();
-                        const icon = this.querySelector('i');
-                        icon.classList.toggle('fas');
-                        icon.classList.toggle('far');
-                        icon.classList.toggle('text-red-600');
-                    });
-                });
-            });
-
-            function updateCartCount() {
-                const cart = JSON.parse(localStorage.getItem('cart')) || [];
-                const cartCount = cart.length; // Đếm số sản phẩm khác nhau
-                const cartBadges = document.querySelectorAll('[data-cart-count]');
-                cartBadges.forEach(badge => {
-                    badge.textContent = cartCount;
-                });
-            }
-        </script>
     </main>
 </div>
+
+
+
+
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Cập nhật số lượng giỏ hàng khi trang load
+        updateCartCount();
+
+        // Add to cart functionality
+        document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                const productId = this.dataset.productId;
+                const productName = this.dataset.productName;
+                const productPrice = this.dataset.productPrice;
+                const img = this.closest('.bg-white').querySelector('img').src; // phần tử cha gần nhất
+                // Add to cart logic
+                let cart = JSON.parse(localStorage.getItem('cart')) || [];
+                const existingItem = cart.find(item => item.id === productId);
+
+                if (existingItem) {
+                    existingItem.quantity += 1;
+                } else {
+                    cart.push({
+                        id: productId,
+                        name: productName,
+                        image: img,
+                        price: productPrice,
+                        quantity: 1
+                    });
+                }
+
+                localStorage.setItem('cart', JSON.stringify(cart));
+
+                // Show notification
+                const notification = document.createElement('div');
+                notification.className = 'fixed top-4 right-4 px-6 py-3 rounded-lg text-white font-semibold z-50 bg-green-500 animate-fade-in';
+                notification.textContent = productName + ' added to cart!';
+                document.body.appendChild(notification);
+
+                setTimeout(() => notification.remove(), 3000);
+
+                // Update cart count
+                updateCartCount();
+            });
+        });
+
+        // Wishlist functionality
+        document.querySelectorAll('.wishlist-btn').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                const icon = this.querySelector('i');
+                icon.classList.toggle('fas');
+                icon.classList.toggle('far');
+                icon.classList.toggle('text-red-600');
+            });
+        });
+    });
+
+    function updateCartCount() {
+        const cart = JSON.parse(localStorage.getItem('cart')) || [];
+        const cartCount = cart.length; // Đếm số sản phẩm khác nhau
+        const cartBadges = document.querySelectorAll('[data-cart-count]');
+        cartBadges.forEach(badge => {
+            badge.textContent = cartCount;
+        });
+    }
+</script>
