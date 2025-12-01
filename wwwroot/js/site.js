@@ -437,8 +437,20 @@ function loadWishlistCount() {
 }
 
 function showNotification(message, type = "info") {
+  // Tạo container cho notifications nếu chưa có
+  let container = document.getElementById("notification-container");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "notification-container";
+    container.className = "fixed top-4 right-4 z-50 flex flex-col gap-2";
+    document.body.appendChild(container);
+  }
+
   const notification = document.createElement("div");
-  notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg text-white font-semibold z-50 animate-fade-in`;
+  notification.className = `px-6 py-3 rounded-lg text-white font-semibold shadow-lg transform transition-all duration-300`;
+  // Bắt đầu với opacity 0 và translate để có animation slide in
+  notification.style.opacity = "0";
+  notification.style.transform = "translateX(100%)";
 
   switch (type) {
     case "success":
@@ -455,10 +467,28 @@ function showNotification(message, type = "info") {
   }
 
   notification.textContent = message;
-  document.body.appendChild(notification);
+
+  // Thêm notification mới vào CUỐI container (message mới ở dưới, theo kiểu list)
+  // A xuất hiện trước -> ở trên
+  // B xuất hiện sau -> ở dưới A
+  container.appendChild(notification);
+
+  // Trigger animation slide in
+  requestAnimationFrame(() => {
+    notification.style.opacity = "1";
+    notification.style.transform = "translateX(0)";
+  });
 
   setTimeout(() => {
-    notification.remove();
+    notification.style.opacity = "0";
+    notification.style.transform = "translateX(100%)";
+    setTimeout(() => {
+      notification.remove();
+      // Xóa container nếu không còn notification nào
+      if (container.children.length === 0) {
+        container.remove();
+      }
+    }, 300);
   }, 3000);
 }
 

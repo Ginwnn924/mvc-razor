@@ -133,7 +133,7 @@
                             <i class="fas fa-plus"></i>
                         </button>
                     </div>
-                    <span class="text-gray-600">@(isInStock ? $"Only {stockQuantity} left in stock" : "Not available")</span>
+                    <span class="text-gray-600">@(isInStock ? $"Only {stockQuantity} left in stock" : "Not             available")</span>
                 </div>
             </div>
 
@@ -354,12 +354,7 @@
             localStorage.setItem('cart', JSON.stringify(cart));
 
             // Show notification
-            const notification = document.createElement('div');
-            notification.className = 'fixed top-4 right-4 px-6 py-3 rounded-lg text-white font-semibold z-50 bg-green-500 animate-fade-in';
-            notification.textContent = `${quantity} x ${productName} added to cart!`;
-            document.body.appendChild(notification);
-
-            setTimeout(() => notification.remove(), 3000);
+            showNotification(`${productName} added to cart!`, 'success');
 
             // Update cart count
             updateCartCount();
@@ -391,8 +386,19 @@
         }
 
         function showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg text-white font-semibold z-50 animate-fade-in`;
+            // Tạo container cho notifications nếu chưa có
+            let container = document.getElementById("notification-container");
+            if (!container) {
+                container = document.createElement("div");
+                container.id = "notification-container";
+                container.className = "fixed top-4 right-4 z-50 flex flex-col gap-2";
+                document.body.appendChild(container);
+            }
+
+            const notification = document.createElement("div");
+            notification.className = `px-6 py-3 rounded-lg text-white font-semibold shadow-lg transform transition-all duration-300`;
+            notification.style.opacity = "0";
+            notification.style.transform = "translateX(100%)";
 
             switch (type) {
                 case 'success':
@@ -401,14 +407,31 @@
                 case 'error':
                     notification.classList.add('bg-red-500');
                     break;
+                case 'warning':
+                    notification.classList.add('bg-yellow-500');
+                    break;
                 default:
                     notification.classList.add('bg-blue-500');
             }
 
             notification.textContent = message;
-            document.body.appendChild(notification);
+            container.appendChild(notification);
 
-            setTimeout(() => notification.remove(), 3000);
+            requestAnimationFrame(() => {
+                notification.style.opacity = "1";
+                notification.style.transform = "translateX(0)";
+            });
+
+            setTimeout(() => {
+                notification.style.opacity = "0";
+                notification.style.transform = "translateX(100%)";
+                setTimeout(() => {
+                    notification.remove();
+                    if (container.children.length === 0) {
+                        container.remove();
+                    }
+                }, 300);
+            }, 3000);
         }
     });
 </script>

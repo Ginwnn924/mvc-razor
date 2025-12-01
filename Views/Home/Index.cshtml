@@ -304,12 +304,7 @@
                 localStorage.setItem('cart', JSON.stringify(cart));
 
                 // Show notification
-                const notification = document.createElement('div');
-                notification.className = 'fixed top-4 right-4 px-6 py-3 rounded-lg text-white font-semibold z-50 bg-green-500 animate-fade-in';
-                notification.textContent = productName + ' added to cart!';
-                document.body.appendChild(notification);
-
-                setTimeout(() => notification.remove(), 3000);
+                showNotification(`${productName} added to cart!`, 'success');
 
                 // Update cart count
                 updateCartCount();

@@ -12,12 +12,15 @@
                 <i class="fas fa-shopping-cart text-5xl text-red-400"></i>
             </div>
             <h1 class="text-3xl font-bold text-gray-800 mb-4">Giỏ hàng trống!</h1>
-            <p class="text-gray-600 mb-8">Bạn chưa có sản phẩm nào trong giỏ hàng. Vui lòng thêm sản phẩm trước khi thanh toán.</p>
+            <p class="text-gray-600 mb-8">Bạn chưa có sản phẩm nào trong giỏ hàng. Vui lòng thêm sản phẩm trước khi
+                thanh toán.</p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="/" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition inline-flex items-center justify-center">
+                <a href="/"
+                    class="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition inline-flex items-center justify-center">
                     <i class="fas fa-shopping-bag mr-2"></i>Tiếp tục mua sắm
                 </a>
-                <a href="/" class="border-2 border-gray-300 text-gray-700 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition inline-flex items-center justify-center">
+                <a href="/"
+                    class="border-2 border-gray-300 text-gray-700 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition inline-flex items-center justify-center">
                     <i class="fas fa-home mr-2"></i>Về trang chủ
                 </a>
             </div>
@@ -252,7 +255,7 @@
         document.addEventListener('DOMContentLoaded', function () {
             // Kiểm tra cart ngay khi load trang
             checkCartAndShowContent();
-            
+
             initPaymentOptions();
             initPromoCode();
             initPlaceOrder();
@@ -262,7 +265,7 @@
             const cart = JSON.parse(localStorage.getItem('cart')) || [];
             const emptyCartError = document.getElementById('emptyCartError');
             const checkoutContent = document.getElementById('checkoutContent');
-            
+
             if (cart.length === 0) {
                 // Giỏ hàng trống - hiện trang lỗi
                 emptyCartError.classList.remove('hidden');
@@ -281,12 +284,12 @@
 
             if (cart.length === 0) {
                 container.innerHTML = `
-                        <div class="text-center py-8">
-                            <i class="fas fa-shopping-cart text-4xl text-gray-300 mb-3"></i>
-                            <p class="text-gray-500">Giỏ hàng trống</p>
-                            <a href="/" class="text-blue-600 hover:underline mt-2 inline-block">Tiếp tục mua sắm</a>
-                        </div>
-                    `;
+                            <div class="text-center py-8">
+                                <i class="fas fa-shopping-cart text-4xl text-gray-300 mb-3"></i>
+                                <p class="text-gray-500">Giỏ hàng trống</p>
+                                <a href="/" class="text-blue-600 hover:underline mt-2 inline-block">Tiếp tục mua sắm</a>
+                            </div>
+                        `;
                 updateCheckoutTotals(0, 0);
                 return;
             }
@@ -301,15 +304,15 @@
                 const imageUrl = item.image || `https://via.placeholder.com/60x60?text=${encodeURIComponent(item.name)}`;
 
                 html += `
-                        <div class="flex gap-3 pb-3 border-b border-gray-100">
-                            <img src="${imageUrl}" alt="${item.name}" class="w-16 h-16 object-cover rounded-lg bg-gray-100" />
-                            <div class="flex-1 min-w-0">
-                                <h4 class="text-sm font-semibold text-gray-800 line-clamp-2">${item.name}</h4>
-                                <p class="text-sm text-gray-500">SL: ${item.quantity}</p>
-                                <p class="text-sm font-bold text-blue-600">${itemTotal.toLocaleString('vi-VN')}đ</p>
+                            <div class="flex gap-3 pb-3 border-b border-gray-100">
+                                <img src="${imageUrl}" alt="${item.name}" class="w-16 h-16 object-cover rounded-lg bg-gray-100" />
+                                <div class="flex-1 min-w-0">
+                                    <h4 class="text-sm font-semibold text-gray-800 line-clamp-2">${item.name}</h4>
+                                    <p class="text-sm text-gray-500">SL: ${item.quantity}</p>
+                                    <p class="text-sm font-bold text-blue-600">${itemTotal.toLocaleString('vi-VN')}đ</p>
+                                </div>
                             </div>
-                        </div>
-                    `;
+                        `;
             });
 
             container.innerHTML = html;
@@ -495,32 +498,32 @@
             const orderId = 'SH' + Date.now().toString().slice(-8);
 
             document.querySelector('.max-w-6xl').innerHTML = `
-                    <div class="bg-white rounded-lg shadow-lg p-8 max-w-2xl mx-auto text-center">
-                        <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <i class="fas fa-check text-4xl text-green-500"></i>
-                        </div>
-                        <h1 class="text-3xl font-bold text-gray-800 mb-4">Đặt hàng thành công!</h1>
-                        <p class="text-gray-600 mb-6">Cảm ơn bạn đã đặt hàng. Chúng tôi sẽ liên hệ với bạn sớm nhất.</p>
+                        <div class="bg-white rounded-lg shadow-lg p-8 max-w-2xl mx-auto text-center">
+                            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <i class="fas fa-check text-4xl text-green-500"></i>
+                            </div>
+                            <h1 class="text-3xl font-bold text-gray-800 mb-4">Đặt hàng thành công!</h1>
+                            <p class="text-gray-600 mb-6">Cảm ơn bạn đã đặt hàng. Chúng tôi sẽ liên hệ với bạn sớm nhất.</p>
                 
-                        <div class="bg-gray-50 rounded-lg p-6 mb-6 text-left">
-                            <h3 class="font-bold text-gray-800 mb-4">Thông tin đơn hàng</h3>
-                            <div class="space-y-2 text-sm">
-                                <p><span class="text-gray-500">Mã đơn hàng:</span> <span class="font-bold text-blue-600">${orderId}</span></p>
-                                <p><span class="text-gray-500">Khách hàng:</span> <span class="font-semibold">${order.customerName}</span></p>
-                                <p><span class="text-gray-500">Số điện thoại:</span> <span class="font-semibold">${order.phoneNumber}</span></p>
-                                <p><span class="text-gray-500">Email:</span> <span class="font-semibold">${order.email}</span></p>
-                                <p><span class="text-gray-500">Địa chỉ:</span> <span class="font-semibold">${order.address}</span></p>
-                                <p><span class="text-gray-500">Phương thức thanh toán:</span> <span class="font-semibold">${getPaymentMethodName(order.paymentMethod)}</span></p>
+                            <div class="bg-gray-50 rounded-lg p-6 mb-6 text-left">
+                                <h3 class="font-bold text-gray-800 mb-4">Thông tin đơn hàng</h3>
+                                <div class="space-y-2 text-sm">
+                                    <p><span class="text-gray-500">Mã đơn hàng:</span> <span class="font-bold text-blue-600">${orderId}</span></p>
+                                    <p><span class="text-gray-500">Khách hàng:</span> <span class="font-semibold">${order.customerName}</span></p>
+                                    <p><span class="text-gray-500">Số điện thoại:</span> <span class="font-semibold">${order.phoneNumber}</span></p>
+                                    <p><span class="text-gray-500">Email:</span> <span class="font-semibold">${order.email}</span></p>
+                                    <p><span class="text-gray-500">Địa chỉ:</span> <span class="font-semibold">${order.address}</span></p>
+                                    <p><span class="text-gray-500">Phương thức thanh toán:</span> <span class="font-semibold">${getPaymentMethodName(order.paymentMethod)}</span></p>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-4 justify-center">
+                                <a href="/" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
+                                    <i class="fas fa-home mr-2"></i>Về trang chủ
+                                </a>
                             </div>
                         </div>
-
-                        <div class="flex gap-4 justify-center">
-                            <a href="/" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
-                                <i class="fas fa-home mr-2"></i>Về trang chủ
-                            </a>
-                        </div>
-                    </div>
-                `;
+                    `;
 
             // Update cart count
             if (typeof updateCartCount === 'function') {
@@ -538,8 +541,19 @@
         }
 
         function showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg text-white font-semibold z-50 animate-fade-in`;
+            // Tạo container cho notifications nếu chưa có
+            let container = document.getElementById("notification-container");
+            if (!container) {
+                container = document.createElement("div");
+                container.id = "notification-container";
+                container.className = "fixed top-4 right-4 z-50 flex flex-col gap-2";
+                document.body.appendChild(container);
+            }
+
+            const notification = document.createElement("div");
+            notification.className = `px-6 py-3 rounded-lg text-white font-semibold shadow-lg transform transition-all duration-300`;
+            notification.style.opacity = "0";
+            notification.style.transform = "translateX(100%)";
 
             switch (type) {
                 case 'success':
@@ -556,10 +570,22 @@
             }
 
             notification.textContent = message;
-            document.body.appendChild(notification);
+            container.appendChild(notification);
+
+            requestAnimationFrame(() => {
+                notification.style.opacity = "1";
+                notification.style.transform = "translateX(0)";
+            });
 
             setTimeout(() => {
-                notification.remove();
+                notification.style.opacity = "0";
+                notification.style.transform = "translateX(100%)";
+                setTimeout(() => {
+                    notification.remove();
+                    if (container.children.length === 0) {
+                        container.remove();
+                    }
+                }, 300);
             }, 3000);
         }
     </script>
