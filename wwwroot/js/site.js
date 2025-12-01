@@ -323,6 +323,9 @@ function initializeEventListeners() {
 
   // Initialize custom price inputs visibility
   toggleCustomPriceInputs();
+
+  // Khởi tạo lại event cho danh sách sản phẩm (phục vụ lần load đầu tiên)
+  rebindProductListEvents();
 }
 
 function handleAddToCart(event) {
@@ -412,6 +415,7 @@ function getActiveFilters() {
     minPrice: null,
     maxPrice: null,
     minRating: null,
+    page: 1,
   };
 
   // Get selected category (if using radio buttons)
@@ -510,13 +514,117 @@ function applyFilters(filters) {
     params.append("minRating", filters.minRating);
   }
 
-  // Redirect to Index with filters
+  if (filters.page && filters.page > 1) {
+    params.append("page", filters.page);
+  }
+
+  // Build URLs
   const origin = window.location.origin;
-  const indexUrl = `${origin}/Home/Index`;
+  const baseIndexUrl = `${origin}/Home/Index`;
+  const baseFilterUrl = `${origin}/Home/FilterProducts`;
   const queryString = params.toString();
-  const finalUrl = queryString ? `${indexUrl}?${queryString}` : indexUrl;
-  
-  window.location.href = finalUrl;
+  const finalIndexUrl = queryString ? `${baseIndexUrl}?${queryString}` : baseIndexUrl;
+  const finalFilterUrl = queryString ? `${baseFilterUrl}?${queryString}` : baseFilterUrl;
+
+  // Update URL without full reload
+  if (window.history && window.history.pushState) {
+    window.history.pushState(null, "", finalIndexUrl);
+  }
+
+  const container = document.getElementById("productListContainer");
+  if (!container) {
+    // Fallback: nếu không có container, reload trang như cũ
+    window.location.href = finalIndexUrl;
+    return;
+  }
+
+  // Hiển thị trạng thái loading nhẹ
+  container.classList.add("opacity-50");
+
+  fetch(finalFilterUrl, {
+    headers: {
+      "X-Requested-With": "XMLHttpRequest",
+    },
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+      return response.text();
+    })
+    .then((html) => {
+      container.innerHTML = html;
+      container.classList.remove("opacity-50");
+
+      // Re-bind event listeners cho các nút trong danh sách mới
+      rebindProductListEvents();
+    })
+    .catch((error) => {
+      container.classList.remove("opacity-50");
+      console.error("Error loading products:", error);
+      showNotification("Không thể tải sản phẩm. Vui lòng thử lại!", "error");
+    });
+}
+
+function rebindProductListEvents() {
+  // Add to cart buttons trong danh sách sản phẩm
+  document.querySelectorAll(".add-to-cart-btn").forEach((btn) => {
+    btn.addEventListener("click", function (e) {
+      e.preventDefault();
+      const productId = this.dataset.productId;
+      const productName = this.dataset.productName;
+      const productPrice = this.dataset.productPrice;
+      const img = this.closest(".bg-white").querySelector("img").src;
+
+      let cart = JSON.parse(localStorage.getItem("cart")) || [];
+      const existingItem = cart.find((item) => item.id === productId);
+
+      if (existingItem) {
+        existingItem.quantity += 1;
+      } else {
+        cart.push({
+          id: productId,
+          name: productName,
+          image: img,
+          price: productPrice,
+          quantity: 1,
+        });
+      }
+
+      localStorage.setItem("cart", JSON.stringify(cart));
+      showNotification(`${productName} added to cart!`, "success");
+      updateCartCount();
+    });
+  });
+
+  // Wishlist buttons
+  document.querySelectorAll(".wishlist-btn").forEach((btn) => {
+    btn.addEventListener("click", function (e) {
+      e.preventDefault();
+      const icon = this.querySelector("i");
+      icon.classList.toggle("fas");
+      icon.classList.toggle("far");
+      icon.classList.toggle("text-red-600");
+    });
+  });
+
+  // Pagination links (AJAX)
+  const productListContainer = document.getElementById("productListContainer");
+  if (productListContainer) {
+    productListContainer
+      .querySelectorAll("[data-page-link]")
+      .forEach((link) => {
+        link.addEventListener("click", function (e) {
+          e.preventDefault();
+          const page = parseInt(this.dataset.page);
+          if (!isNaN(page)) {
+            const filters = getActiveFilters();
+            filters.page = page;
+            applyFilters(filters);
+          }
+        });
+      });
+  }
 }
 
 function handleClearFilters(event) {
@@ -554,15 +662,10 @@ function handleClearFilters(event) {
     customInputs.classList.add("hidden");
   }
 
-  // Redirect to Index without filters
-  const currentUrl = new URL(window.location.href);
-  const searchQuery = currentUrl.searchParams.get("searchQuery");
-  
-  const origin = window.location.origin;
-  const indexUrl = `${origin}/Home/Index`;
-  const finalUrl = searchQuery ? `${indexUrl}?searchQuery=${encodeURIComponent(searchQuery)}` : indexUrl;
-  
-  window.location.href = finalUrl;
+  // Áp dụng lại filter mặc định bằng Ajax (không reload trang)
+  const filters = getActiveFilters();
+  filters.page = 1;
+  applyFilters(filters);
 }
 
 function handleSearch(event) {

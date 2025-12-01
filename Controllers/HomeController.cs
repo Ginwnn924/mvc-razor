@@ -114,6 +114,27 @@ namespace mvc_razor.Controllers
             }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> FilterProducts(
+            int page = 1,
+            int pageSize = 12,
+            string? searchQuery = null,
+            int? categoryId = null,
+            decimal? minPrice = null,
+            decimal? maxPrice = null,
+            int? minRating = null)
+        {
+            // Tái sử dụng toàn bộ logic trong Index để đảm bảo kết quả đồng nhất
+            var result = await Index(page, pageSize, searchQuery, categoryId, minPrice, maxPrice, minRating) as ViewResult;
+
+            if (result?.Model is ProductListViewModel viewModel)
+            {
+                return PartialView("_ProductList", viewModel);
+            }
+
+            return BadRequest("Unable to load products");
+        }
+
         public async Task<IActionResult> Details(int id)
         {
             try
