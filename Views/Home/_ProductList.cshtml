@@ -1,4 +1,34 @@
 @model ProductListViewModel
+@using mvc_razor.Models
+
+@{
+    // Helper function to render stars
+    Func<decimal, string> RenderStars = (rating) =>
+    {
+        if (rating <= 0) return "";
+        
+        var fullStars = (int)Math.Floor(rating);
+        var hasHalfStar = (rating - fullStars) >= 0.5m;
+        var emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+        
+        var html = "";
+        for (int i = 0; i < fullStars; i++)
+        {
+            html += "<i class=\"fas fa-star\"></i>";
+        }
+        if (hasHalfStar)
+        {
+            html += "<i class=\"fas fa-star-half-alt\"></i>";
+        }
+        for (int i = 0; i < emptyStars; i++)
+        {
+            html += "<i class=\"far fa-star\"></i>";
+        }
+        return html;
+    };
+    
+    var productRatings = ViewBag.ProductRatings as Dictionary<int, ProductRatingInfo> ?? new Dictionary<int, ProductRatingInfo>();
+}
 
 <!-- Products Grid -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="products">
@@ -42,15 +72,34 @@
                             @product.ProductName
                         </h3>
                     </a>
+                    @{
+                        var ratingInfo = productRatings.ContainsKey(product.ProductId) 
+                            ? productRatings[product.ProductId] 
+                            : new ProductRatingInfo { ProductId = product.ProductId, AverageRating = 0, ReviewCount = 0 };
+                        var avgRating = ratingInfo.AverageRating;
+                        var reviewCount = ratingInfo.ReviewCount;
+                    }
                     <div class="flex items-center mb-3">
-                        <div class="text-yellow-500 text-sm">
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="far fa-star"></i>
-                        </div>
-                        <span class="text-gray-600 text-sm ml-2">(0 reviews)</span>
+                        @if (reviewCount > 0)
+                        {
+                            <div class="text-yellow-500 text-sm">
+                                @Html.Raw(RenderStars(avgRating))
+                            </div>
+                            <span class="text-gray-600 text-sm ml-2">
+                                @avgRating.ToString("F1") (@reviewCount @(reviewCount == 1 ? "review" : "reviews"))
+                            </span>
+                        }
+                        else
+                        {
+                            <div class="text-gray-300 text-sm">
+                                <i class="far fa-star"></i>
+                                <i class="far fa-star"></i>
+                                <i class="far fa-star"></i>
+                                <i class="far fa-star"></i>
+                                <i class="far fa-star"></i>
+                            </div>
+                            <span class="text-gray-400 text-sm ml-2">Chưa có đánh giá</span>
+                        }
                     </div>
                     <div class="flex items-center justify-between mb-4">
                         <div>

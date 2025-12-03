@@ -75,11 +75,29 @@ namespace mvc_razor.Controllers
                 // Get products with pagination
                 var products = await query
                     .Where(p => p.IsDeleted == false)
+                    .Include(p => p.Reviews)
                     .OrderByDescending(p => p.CreatedAt)
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
 
+                // Calculate rating info for each product
+                var productRatings = new Dictionary<int, ProductRatingInfo>();
+                foreach (var product in products)
+                {
+                    var activeReviews = product.Reviews?.Where(r => !r.IsDeleted).ToList() ?? new List<ReviewModel>();
+                    var reviewCount = activeReviews.Count;
+                    var averageRating = reviewCount > 0 
+                        ? (decimal)activeReviews.Average(r => r.Rating) 
+                        : 0;
+
+                    productRatings[product.ProductId] = new ProductRatingInfo
+                    {
+                        ProductId = product.ProductId,
+                        AverageRating = averageRating,
+                        ReviewCount = reviewCount
+                    };
+                }
 
                 var bestSellerProducts = await _context.Products
                     .FromSqlRaw(@"
@@ -90,15 +108,41 @@ namespace mvc_razor.Controllers
                         LIMIT 4")
                     .Include(p => p.Category)
                     .Include(p => p.Inventory)
+                    .Include(p => p.Reviews)
                     .ToListAsync();
 
+                // Calculate rating info for best sellers
+                var bestSellerRatings = new Dictionary<int, ProductRatingInfo>();
+                foreach (var product in bestSellerProducts)
+                {
+                    var activeReviews = product.Reviews?.Where(r => !r.IsDeleted).ToList() ?? new List<ReviewModel>();
+                    var reviewCount = activeReviews.Count;
+                    var averageRating = reviewCount > 0 
+                        ? (decimal)activeReviews.Average(r => r.Rating) 
+                        : 0;
+
+                    bestSellerRatings[product.ProductId] = new ProductRatingInfo
+                    {
+                        ProductId = product.ProductId,
+                        AverageRating = averageRating,
+                        ReviewCount = reviewCount
+                    };
+                }
+
+                // Get all categories for filter sidebar
+                var categories = await _context.Categories
+                    .OrderBy(c => c.CategoryName)
+                    .ToListAsync();
 
                 // Pass data to ViewBag for sidebar and search box
+                ViewBag.Categories = categories;
                 ViewBag.SelectedCategoryId = categoryId;
                 ViewBag.MinPrice = minPrice;
                 ViewBag.MaxPrice = maxPrice;
                 ViewBag.SearchQuery = searchQuery;
                 ViewBag.MinRating = minRating;
+                ViewBag.ProductRatings = productRatings;
+                ViewBag.BestSellerRatings = bestSellerRatings;
 
                 // Create view model
                 var viewModel = new ProductListViewModel
@@ -139,6 +183,27 @@ namespace mvc_razor.Controllers
 
             if (result?.Model is ProductListViewModel viewModel)
             {
+                // Calculate rating info for products in viewModel (đảm bảo ViewBag có rating info)
+                var productRatings = new Dictionary<int, ProductRatingInfo>();
+                foreach (var product in viewModel.Products)
+                {
+                    var activeReviews = product.Reviews?.Where(r => !r.IsDeleted).ToList() ?? new List<ReviewModel>();
+                    var reviewCount = activeReviews.Count;
+                    var averageRating = reviewCount > 0 
+                        ? (decimal)activeReviews.Average(r => r.Rating) 
+                        : 0;
+
+                    productRatings[product.ProductId] = new ProductRatingInfo
+                    {
+                        ProductId = product.ProductId,
+                        AverageRating = averageRating,
+                        ReviewCount = reviewCount
+                    };
+                }
+                
+                // Set ViewBag để PartialView có thể sử dụng
+                ViewBag.ProductRatings = productRatings;
+                
                 return PartialView("_ProductList", viewModel);
             }
 
@@ -152,6 +217,7 @@ namespace mvc_razor.Controllers
                 var product = await _context.Products
                     .Include(p => p.Category)
                     .Include(p => p.Inventory)
+                    .Include(p => p.Reviews)
                     .FirstOrDefaultAsync(p => p.ProductId == id);
 
                 if (product == null)
@@ -159,13 +225,82 @@ namespace mvc_razor.Controllers
                     return NotFound();
                 }
 
+                // Get active reviews (not deleted) and include customer info
+                var activeReviews = product.Reviews?
+                    .Where(r => !r.IsDeleted)
+                    .OrderByDescending(r => r.CreatedAt)
+                    .ToList() ?? new List<ReviewModel>();
+
+                // Load customer names for reviews
+                var customerIds = activeReviews
+                    .Where(r => r.CustomerId.HasValue)
+                    .Select(r => r.CustomerId!.Value)
+                    .Distinct()
+                    .ToList();
+
+                var customers = await _context.Customers
+                    .Where(c => customerIds.Contains(c.CustomerId))
+                    .ToDictionaryAsync(c => c.CustomerId, c => c.Name);
+
+                // Calculate rating info for main product
+                var reviewCount = activeReviews.Count;
+                var averageRating = reviewCount > 0 
+                    ? (decimal)activeReviews.Average(r => r.Rating) 
+                    : 0;
+
+                // Calculate rating distribution
+                var ratingDistribution = new Dictionary<int, int>
+                {
+                    { 5, 0 }, { 4, 0 }, { 3, 0 }, { 2, 0 }, { 1, 0 }
+                };
+                foreach (var review in activeReviews)
+                {
+                    if (ratingDistribution.ContainsKey(review.Rating))
+                    {
+                        ratingDistribution[review.Rating]++;
+                    }
+                }
+
+                var productRating = new ProductRatingInfo
+                {
+                    ProductId = product.ProductId,
+                    AverageRating = averageRating,
+                    ReviewCount = reviewCount
+                };
+
                 // Get related products (same category)
                 var relatedProducts = await _context.Products
                     .Include(p => p.Category)
                     .Include(p => p.Inventory)
-                    .Where(p => p.CategoryId == product.CategoryId && p.ProductId != id)
+                    .Include(p => p.Reviews)
+                    .Where(p => p.CategoryId == product.CategoryId && p.ProductId != id && !p.IsDeleted)
                     .Take(4)
                     .ToListAsync();
+
+                // Calculate rating info for related products
+                var relatedProductRatings = new Dictionary<int, ProductRatingInfo>();
+                foreach (var relatedProduct in relatedProducts)
+                {
+                    var relatedActiveReviews = relatedProduct.Reviews?.Where(r => !r.IsDeleted).ToList() ?? new List<ReviewModel>();
+                    var relatedReviewCount = relatedActiveReviews.Count;
+                    var relatedAverageRating = relatedReviewCount > 0 
+                        ? (decimal)relatedActiveReviews.Average(r => r.Rating) 
+                        : 0;
+
+                    relatedProductRatings[relatedProduct.ProductId] = new ProductRatingInfo
+                    {
+                        ProductId = relatedProduct.ProductId,
+                        AverageRating = relatedAverageRating,
+                        ReviewCount = relatedReviewCount
+                    };
+                }
+
+                // Pass data to ViewBag
+                ViewBag.ProductRating = productRating;
+                ViewBag.ProductReviews = activeReviews;
+                ViewBag.Customers = customers;
+                ViewBag.RatingDistribution = ratingDistribution;
+                ViewBag.RelatedProductRatings = relatedProductRatings;
 
                 var viewModel = new ProductDetailsViewModel
                 {
@@ -179,6 +314,76 @@ namespace mvc_razor.Controllers
             {
                 _logger.LogError(ex, "Error loading product details");
                 return NotFound();
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAllProductsJson()
+        {
+            try
+            {
+                // Get all active products with related data
+                var products = await _context.Products
+                    .Include(p => p.Category)
+                    .Include(p => p.Inventory)
+                    .Include(p => p.Reviews)
+                    .Where(p => !p.IsDeleted)
+                    .OrderByDescending(p => p.CreatedAt)
+                    .ToListAsync();
+
+                // Get all categories
+                var categories = await _context.Categories
+                    .OrderBy(c => c.CategoryName)
+                    .ToListAsync();
+
+                // Calculate rating info for each product
+                var productRatings = new Dictionary<int, ProductRatingInfo>();
+                foreach (var product in products)
+                {
+                    var activeReviews = product.Reviews?.Where(r => !r.IsDeleted).ToList() ?? new List<ReviewModel>();
+                    var reviewCount = activeReviews.Count;
+                    var averageRating = reviewCount > 0 
+                        ? (decimal)activeReviews.Average(r => r.Rating) 
+                        : 0;
+
+                    productRatings[product.ProductId] = new ProductRatingInfo
+                    {
+                        ProductId = product.ProductId,
+                        AverageRating = averageRating,
+                        ReviewCount = reviewCount
+                    };
+                }
+
+                // Create response object
+                var response = new
+                {
+                    products = products.Select(p => new
+                    {
+                        productId = p.ProductId,
+                        productName = p.ProductName,
+                        price = p.Price,
+                        imageUrl = p.ImageUrl ?? "",
+                        categoryId = p.CategoryId,
+                        categoryName = p.Category?.CategoryName ?? "",
+                        stockQuantity = p.Inventory?.Quantity ?? 0,
+                        createdAt = p.CreatedAt,
+                        averageRating = productRatings.ContainsKey(p.ProductId) ? productRatings[p.ProductId].AverageRating : 0,
+                        reviewCount = productRatings.ContainsKey(p.ProductId) ? productRatings[p.ProductId].ReviewCount : 0
+                    }).ToList(),
+                    categories = categories.Select(c => new
+                    {
+                        categoryId = c.CategoryId,
+                        categoryName = c.CategoryName
+                    }).ToList(),
+                    timestamp = DateTime.UtcNow
+                };
+
+                return Json(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading all products for JSON");
+                return Json(new { error = "Failed to load products" });
             }
         }
 

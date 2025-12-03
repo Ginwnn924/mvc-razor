@@ -378,4 +378,186 @@ INSERT INTO reviews (product_id, customer_id, rating, comment) VALUES
 -- Reviews cho sản phẩm 30 (Nước suối Lavie)
 (30, 20, 5, 'Nước suối Lavie tinh khiết, an toàn.'),
 (30, 1, 4, 'Chất lượng tốt.'),
-(30, 2, 5, 'Luôn có trong nhà.');
+(30, 2, 5, 'Luôn có trong nhà.'),
+
+-- Bổ sung reviews cho các sản phẩm 1-30 (để đảm bảo mỗi sản phẩm có tối thiểu 4 reviews)
+-- Sản phẩm 7 (Bánh Chocopie) - Bổ sung 1 review
+(7, 10, 5, 'Bánh Chocopie mềm mịn, vị ngọt vừa phải. Rất ngon!'),
+
+-- Sản phẩm 8 (Kẹo Alpenliebe) - Bổ sung 1 review
+(8, 13, 4, 'Kẹo Alpenliebe nhiều vị, thơm ngon. Trẻ em rất thích.'),
+
+-- Sản phẩm 9 (Kẹo bạc hà) - Bổ sung 1 review
+(9, 16, 5, 'Kẹo bạc hà mát lạnh, thơm mát. Rất thích vị này.'),
+
+-- Sản phẩm 11 (Nước mắm Nam Ngư) - Bổ sung 1 review
+(11, 3, 5, 'Nước mắm Nam Ngư đậm đà, chất lượng tốt. Dùng lâu rồi vẫn thích.'),
+
+-- Sản phẩm 12 (Nước tương Maggi) - Bổ sung 1 review
+(12, 6, 5, 'Nước tương Maggi thơm ngon, dùng cho nhiều món ăn. Rất tiện lợi.'),
+
+-- Sản phẩm 13 (Muối i-ốt) - Bổ sung 1 review
+(13, 9, 5, 'Muối i-ốt tốt cho sức khỏe, chất lượng đảm bảo.'),
+
+-- Sản phẩm 14 (Bột ngọt Ajinomoto) - Bổ sung 1 review
+(14, 12, 4, 'Bột ngọt Ajinomoto chất lượng, dùng lâu rồi.'),
+
+-- Sản phẩm 15 (Dầu ăn Tường An) - Bổ sung 1 review
+(15, 15, 5, 'Dầu ăn Tường An chất lượng tốt, không có mùi khó chịu.'),
+
+-- Sản phẩm 17 (Ấm siêu tốc) - Bổ sung 1 review
+(17, 2, 4, 'Ấm siêu tốc đun nước nhanh, tiện lợi cho gia đình.'),
+
+-- Sản phẩm 18 (Quạt máy) - Bổ sung 1 review
+(18, 5, 5, 'Quạt máy mát lạnh, công suất mạnh. Giá cả hợp lý.'),
+
+-- Sản phẩm 19 (Bếp gas mini) - Bổ sung 1 review
+(19, 8, 4, 'Bếp gas mini tiện lợi, an toàn. Phù hợp cho sinh viên.'),
+
+-- Sản phẩm 21 (Sữa rửa mặt Hazeline) - Bổ sung 1 review
+(21, 15, 4, 'Sữa rửa mặt Hazeline làm sạch tốt, da mịn màng.'),
+
+-- Sản phẩm 22 (Kem dưỡng da Pond's) - Bổ sung 1 review
+(22, 18, 5, 'Kem dưỡng da Pond's dưỡng ẩm tốt, da mịn màng.'),
+
+-- Sản phẩm 24 (Sữa tắm Dove) - Bổ sung 1 review
+(24, 5, 5, 'Sữa tắm Dove dưỡng ẩm tốt, da mịn màng sau khi tắm.'),
+
+-- Sản phẩm 25 (Nước hoa Romano) - Bổ sung 1 review
+(25, 8, 5, 'Nước hoa Romano thơm lâu, mùi hương sang trọng.'),
+
+-- Sản phẩm 26 (Cà phê G7) - Bổ sung 1 review
+(26, 11, 5, 'Cà phê G7 thơm ngon, đậm đà. Sản phẩm yêu thích mỗi sáng.'),
+
+-- Sản phẩm 27 (Trà Lipton) - Bổ sung 1 review
+(27, 14, 5, 'Trà Lipton thơm ngon, giải khát tốt. Rất hài lòng!'),
+
+-- Sản phẩm 28 (Sữa Vinamilk) - Bổ sung 1 review
+(28, 17, 5, 'Sữa Vinamilk thơm ngon, bổ dưỡng. Con tôi rất thích uống.'),
+
+-- Sản phẩm 29 (Sữa TH True Milk) - Bổ sung 1 review
+(29, 20, 5, 'Sữa TH True Milk chất lượng tốt, thơm ngon.'),
+
+-- Sản phẩm 30 (Nước suối Lavie) - Bổ sung 1 review
+(30, 3, 5, 'Nước suối Lavie tinh khiết, an toàn. Luôn có trong nhà.'),
+
+-- Reviews cho các sản phẩm 31-50 (chưa có reviews trong db.sql)
+-- Sản phẩm 31 (Nước ngọt Sprite)
+(31, 5, 5, 'Nước ngọt Sprite mát lạnh, giải khát tốt. Rất ngon!'),
+(31, 6, 4, 'Chất lượng tốt, giá cả hợp lý. Sẽ mua lại.'),
+(31, 7, 5, 'Sản phẩm yêu thích, luôn có trong tủ lạnh.'),
+(31, 8, 4, 'Ngon, đóng gói đẹp. Hài lòng với chất lượng.'),
+
+-- Sản phẩm 32 (Trà sữa đóng chai)
+(32, 9, 5, 'Trà sữa đóng chai ngon, vị ngọt vừa phải. Rất thích!'),
+(32, 10, 4, 'Chất lượng ổn, giá cả hợp lý.'),
+(32, 11, 5, 'Sản phẩm tiện lợi, có thể mang theo mọi nơi.'),
+(32, 12, 4, 'Ngon nhưng hơi ngọt một chút. Vẫn sẽ mua lại.'),
+
+-- Sản phẩm 33 (Giấy vệ sinh Pulppy)
+(33, 13, 5, 'Giấy vệ sinh Pulppy mềm mại, chất lượng tốt.'),
+(33, 14, 4, 'Giá cả hợp lý, chất lượng ổn định.'),
+(33, 15, 5, 'Sản phẩm cần thiết, luôn mua ở đây.'),
+(33, 16, 4, 'Chất lượng tốt, đóng gói chắc chắn.'),
+
+-- Sản phẩm 34 (Bình nước Lock&Lock)
+(34, 17, 5, 'Bình nước Lock&Lock chắc chắn, không rò rỉ. Rất tốt!'),
+(34, 18, 4, 'Chất lượng tốt, thiết kế đẹp.'),
+(34, 19, 5, 'Sản phẩm tiện lợi, có thể mang theo mọi nơi.'),
+(34, 20, 4, 'Giá cả hợp lý, chất lượng đảm bảo.'),
+
+-- Sản phẩm 35 (Hộp nhựa Tupperware)
+(35, 1, 5, 'Hộp nhựa Tupperware chắc chắn, bảo quản thực phẩm tốt.'),
+(35, 2, 4, 'Chất lượng tốt, giá cả hợp lý.'),
+(35, 3, 5, 'Sản phẩm tiện lợi, dùng lâu rồi vẫn tốt.'),
+(35, 4, 4, 'Thiết kế đẹp, chất lượng đảm bảo.'),
+
+-- Sản phẩm 36 (Dao Inox)
+(36, 5, 5, 'Dao Inox sắc bén, chất lượng tốt. Rất hài lòng!'),
+(36, 6, 4, 'Giá cả hợp lý, chất lượng ổn.'),
+(36, 7, 5, 'Sản phẩm cần thiết trong bếp, chất lượng đảm bảo.'),
+(36, 8, 4, 'Chất lượng tốt, sử dụng lâu dài.'),
+
+-- Sản phẩm 37 (Bàn chải Colgate)
+(37, 9, 5, 'Bàn chải Colgate mềm mại, làm sạch răng tốt.'),
+(37, 10, 4, 'Chất lượng tốt, giá cả hợp lý.'),
+(37, 11, 5, 'Sản phẩm yêu thích, dùng lâu rồi vẫn thích.'),
+(37, 12, 4, 'Thiết kế đẹp, chất lượng đảm bảo.'),
+
+-- Sản phẩm 38 (Kem đánh răng P/S)
+(38, 13, 5, 'Kem đánh răng P/S thơm mát, làm sạch răng tốt.'),
+(38, 14, 4, 'Chất lượng tốt, giá cả hợp lý.'),
+(38, 15, 5, 'Sản phẩm tin dùng, cả gia đình đều dùng.'),
+(38, 16, 4, 'Vị thơm mát, chất lượng đảm bảo.'),
+
+-- Sản phẩm 39 (Nước súc miệng Listerine)
+(39, 17, 5, 'Nước súc miệng Listerine làm sạch tốt, thơm mát.'),
+(39, 18, 4, 'Chất lượng tốt, giá cả hợp lý.'),
+(39, 19, 5, 'Sản phẩm yêu thích, dùng hàng ngày.'),
+(39, 20, 4, 'Vị thơm mát, chất lượng đảm bảo.'),
+
+-- Sản phẩm 40 (Khẩu trang 3M)
+(40, 1, 5, 'Khẩu trang 3M chất lượng tốt, bảo vệ hiệu quả.'),
+(40, 2, 4, 'Giá cả hợp lý, chất lượng đảm bảo.'),
+(40, 3, 5, 'Sản phẩm cần thiết, luôn mua ở đây.'),
+(40, 4, 4, 'Chất lượng tốt, đóng gói chắc chắn.'),
+
+-- Sản phẩm 41 (Bánh mì sandwich)
+(41, 5, 5, 'Bánh mì sandwich mềm mịn, thơm ngon. Rất ngon!'),
+(41, 6, 4, 'Chất lượng tốt, giá cả hợp lý.'),
+(41, 7, 5, 'Sản phẩm tiện lợi cho bữa sáng.'),
+(41, 8, 4, 'Ngon, đóng gói đẹp. Sẽ mua lại.'),
+
+-- Sản phẩm 42 (Mì gói Hảo Hảo)
+(42, 9, 5, 'Mì gói Hảo Hảo ngon, vị đậm đà. Sản phẩm yêu thích!'),
+(42, 10, 4, 'Chất lượng tốt, giá cả hợp lý.'),
+(42, 11, 5, 'Tiện lợi, nấu nhanh. Rất hài lòng!'),
+(42, 12, 4, 'Ngon, đóng gói chắc chắn. Sẽ mua lại.'),
+
+-- Sản phẩm 43 (Mì Omachi)
+(43, 13, 5, 'Mì Omachi ngon, vị đậm đà. Rất thích!'),
+(43, 14, 4, 'Chất lượng tốt, giá cả hợp lý.'),
+(43, 15, 5, 'Sản phẩm tiện lợi, nấu nhanh.'),
+(43, 16, 4, 'Ngon, đóng gói đẹp. Hài lòng với chất lượng.'),
+
+-- Sản phẩm 44 (Bún khô)
+(44, 17, 5, 'Bún khô chất lượng tốt, nấu nhanh. Rất ngon!'),
+(44, 18, 4, 'Giá cả hợp lý, chất lượng ổn.'),
+(44, 19, 5, 'Sản phẩm tiện lợi, dùng lâu rồi vẫn thích.'),
+(44, 20, 4, 'Chất lượng tốt, đóng gói chắc chắn.'),
+
+-- Sản phẩm 45 (Phở ăn liền)
+(45, 1, 5, 'Phở ăn liền ngon, vị đậm đà. Rất thích!'),
+(45, 2, 4, 'Chất lượng tốt, giá cả hợp lý.'),
+(45, 3, 5, 'Sản phẩm tiện lợi, nấu nhanh.'),
+(45, 4, 4, 'Ngon, đóng gói đẹp. Sẽ mua lại.'),
+
+-- Sản phẩm 46 (Snack Oishi)
+(46, 5, 5, 'Snack Oishi giòn tan, vị ngon. Rất thích!'),
+(46, 6, 4, 'Chất lượng tốt, giá cả hợp lý.'),
+(46, 7, 5, 'Sản phẩm yêu thích, luôn mua ở đây.'),
+(46, 8, 4, 'Ngon, đóng gói đẹp. Sẽ mua lại.'),
+
+-- Sản phẩm 47 (Snack Lay's)
+(47, 9, 5, 'Snack Lay's giòn tan, vị đậm đà. Rất ngon!'),
+(47, 10, 4, 'Chất lượng tốt, giá cả hợp lý.'),
+(47, 11, 5, 'Sản phẩm yêu thích, cả gia đình đều thích.'),
+(47, 12, 4, 'Ngon, đóng gói chắc chắn. Hài lòng với chất lượng.'),
+
+-- Sản phẩm 48 (Kẹo dẻo Haribo)
+(48, 13, 5, 'Kẹo dẻo Haribo ngon, nhiều vị. Trẻ em rất thích!'),
+(48, 14, 4, 'Chất lượng tốt, giá cả hợp lý.'),
+(48, 15, 5, 'Sản phẩm yêu thích, luôn mua ở đây.'),
+(48, 16, 4, 'Ngon, đóng gói đẹp. Sẽ mua lại.'),
+
+-- Sản phẩm 49 (Khăn giấy Tempo)
+(49, 17, 5, 'Khăn giấy Tempo mềm mại, chất lượng tốt.'),
+(49, 18, 4, 'Giá cả hợp lý, chất lượng ổn định.'),
+(49, 19, 5, 'Sản phẩm cần thiết, luôn mua ở đây.'),
+(49, 20, 4, 'Chất lượng tốt, đóng gói chắc chắn.'),
+
+-- Sản phẩm 50 (Bông tẩy trang)
+(50, 1, 5, 'Bông tẩy trang mềm mại, chất lượng tốt. Rất hài lòng!'),
+(50, 2, 4, 'Giá cả hợp lý, chất lượng ổn.'),
+(50, 3, 5, 'Sản phẩm yêu thích, dùng lâu rồi vẫn thích.'),
+(50, 4, 4, 'Chất lượng tốt, đóng gói đẹp.');

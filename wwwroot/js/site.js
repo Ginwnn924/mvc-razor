@@ -1,10 +1,34 @@
 // ShopHub E-commerce Site JavaScript
 
+// Global cache for products data
+let productsCache = {
+  products: [],
+  categories: [],
+  timestamp: null,
+  isLoaded: false
+};
+
+// Current filters state
+let currentFilters = {
+  searchQuery: null,
+  categoryId: null,
+  minPrice: null,
+  maxPrice: null,
+  minRating: null,
+  page: 1,
+  pageSize: 12
+};
+
 document.addEventListener("DOMContentLoaded", function () {
   initializeEventListeners();
   loadCartCount();
   loadWishlistCount();
   initializeCartOverlay();
+  
+  // Preload products data if on index page
+  if (document.getElementById("productListContainer")) {
+    preloadProductsData();
+  }
 });
 
 // Initialize Cart Overlay
@@ -538,6 +562,20 @@ function applyFilters(filters) {
     return;
   }
 
+  // Use client-side filtering if cache is loaded
+  if (productsCache.isLoaded) {
+    // Update current filters
+    currentFilters = { ...filters };
+    currentFilters.searchQuery = searchQuery || null;
+    currentFilters.pageSize = 12;
+    
+    // Filter and render from cache
+    const filteredProducts = filterProductsClientSide(productsCache.products, currentFilters);
+    renderProductsFromCache(filteredProducts, currentFilters.page || 1, currentFilters.pageSize);
+    return;
+  }
+
+  // Fallback to server-side filtering
   // Hiển thị trạng thái loading nhẹ
   container.classList.add("opacity-50");
 
@@ -662,17 +700,359 @@ function handleClearFilters(event) {
     customInputs.classList.add("hidden");
   }
 
-  // Áp dụng lại filter mặc định bằng Ajax (không reload trang)
+  // Clear search input
+  const searchInput = document.querySelector('input[name="q"]');
+  if (searchInput) searchInput.value = "";
+
+  // Reset filters
+  currentFilters = {
+    searchQuery: null,
+    categoryId: null,
+    minPrice: null,
+    maxPrice: null,
+    minRating: null,
+    page: 1,
+    pageSize: 12
+  };
+
+  // Update URL
+  const origin = window.location.origin;
+  if (window.history && window.history.pushState) {
+    window.history.pushState(null, "", `${origin}/Home/Index`);
+  }
+
+  // Apply filters
+  if (productsCache.isLoaded) {
+    const filteredProducts = filterProductsClientSide(productsCache.products, currentFilters);
+    renderProductsFromCache(filteredProducts, 1, 12);
+  } else {
+    const filters = getActiveFilters();
+    filters.page = 1;
+    applyFilters(filters);
+  }
+}
+
+// Refresh cache manually
+function refreshProductsCache() {
+  productsCache.isLoaded = false;
+  productsCache.timestamp = null;
+  preloadProductsData();
+}
+
+// Preload products data from API
+async function preloadProductsData() {
+  const container = document.getElementById("productListContainer");
+  if (!container) return;
+
+  // Check if cache is still valid (5 minutes)
+  const cacheAge = productsCache.timestamp 
+    ? (Date.now() - new Date(productsCache.timestamp).getTime()) / 1000 / 60 
+    : Infinity;
+  
+  if (productsCache.isLoaded && cacheAge < 5) {
+    // Use cached data
+    applyFiltersFromCache();
+    return;
+  }
+
+  // Show loading indicator
+  container.classList.add("opacity-50");
+  
+  try {
+    const response = await fetch("/Home/GetAllProductsJson", {
+      headers: {
+        "X-Requested-With": "XMLHttpRequest",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Network response was not ok");
+    }
+
+    const data = await response.json();
+    
+    if (data.error) {
+      throw new Error(data.error);
+    }
+
+    // Store in cache
+    productsCache.products = data.products || [];
+    productsCache.categories = data.categories || [];
+    productsCache.timestamp = data.timestamp;
+    productsCache.isLoaded = true;
+
+    // Apply current filters from URL
+    applyFiltersFromCache();
+    
+    container.classList.remove("opacity-50");
+  } catch (error) {
+    container.classList.remove("opacity-50");
+    console.error("Error preloading products:", error);
+    // Fallback to server-side filtering
+    useServerSideFiltering();
+  }
+}
+
+// Apply filters using cached data (client-side)
+function applyFiltersFromCache() {
+  if (!productsCache.isLoaded) {
+    useServerSideFiltering();
+    return;
+  }
+
+  // Get current filters from URL or form
+  const urlParams = new URLSearchParams(window.location.search);
+  currentFilters.searchQuery = urlParams.get("searchQuery") || null;
+  currentFilters.categoryId = urlParams.get("categoryId") ? parseInt(urlParams.get("categoryId")) : null;
+  currentFilters.minPrice = urlParams.get("minPrice") ? parseFloat(urlParams.get("minPrice")) : null;
+  currentFilters.maxPrice = urlParams.get("maxPrice") ? parseFloat(urlParams.get("maxPrice")) : null;
+  currentFilters.minRating = urlParams.get("minRating") ? parseInt(urlParams.get("minRating")) : null;
+  currentFilters.page = urlParams.get("page") ? parseInt(urlParams.get("page")) : 1;
+
+  // Filter products client-side
+  const filteredProducts = filterProductsClientSide(productsCache.products, currentFilters);
+
+  // Render products
+  renderProductsFromCache(filteredProducts, currentFilters.page, currentFilters.pageSize);
+}
+
+// Filter products client-side
+function filterProductsClientSide(products, filters) {
+  let filtered = [...products];
+
+  // Search filter
+  if (filters.searchQuery && filters.searchQuery.trim() !== "") {
+    const query = filters.searchQuery.toLowerCase().trim();
+    filtered = filtered.filter(p => 
+      p.productName.toLowerCase().includes(query)
+    );
+  }
+
+  // Category filter
+  if (filters.categoryId) {
+    filtered = filtered.filter(p => p.categoryId === filters.categoryId);
+  }
+
+  // Price filters
+  if (filters.minPrice !== null) {
+    filtered = filtered.filter(p => p.price >= filters.minPrice);
+  }
+  if (filters.maxPrice !== null) {
+    filtered = filtered.filter(p => p.price <= filters.maxPrice);
+  }
+
+  // Rating filter
+  if (filters.minRating !== null && filters.minRating > 0) {
+    filtered = filtered.filter(p => p.averageRating >= filters.minRating);
+  }
+
+  return filtered;
+}
+
+// Render products from cache
+function renderProductsFromCache(filteredProducts, page, pageSize) {
+  const container = document.getElementById("productListContainer");
+  if (!container) return;
+
+  // Calculate pagination
+  const totalProducts = filteredProducts.length;
+  const totalPages = Math.ceil(totalProducts / pageSize);
+  const startIndex = (page - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
+
+  // Render products HTML
+  let productsHtml = '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="products">';
+  
+  if (paginatedProducts.length > 0) {
+    paginatedProducts.forEach(product => {
+      const imageUrl = product.imageUrl || `https://via.placeholder.com/300x200?text=${encodeURIComponent(product.productName)}`;
+      const isInStock = product.stockQuantity > 0;
+      const avgRating = product.averageRating || 0;
+      const reviewCount = product.reviewCount || 0;
+      
+      // Render stars
+      const starsHtml = renderStarsHtml(avgRating);
+      
+      productsHtml += `
+        <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition transform hover:scale-105 group">
+          <a href="/Home/Details/${product.productId}"
+             class="block relative bg-gray-200 h-48 overflow-hidden">
+            <img src="${imageUrl}" alt="${product.productName}"
+                 class="w-full h-full object-cover group-hover:opacity-75 transition" />
+            ${!isInStock ? '<div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center"><span class="text-white font-bold text-lg">Hết hàng</span></div>' : ''}
+          </a>
+          <button
+              class="absolute top-3 left-3 bg-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-gray-100 transition wishlist-btn z-10"
+              data-product-id="${product.productId}">
+              <i class="far fa-heart text-gray-600"></i>
+          </button>
+          <div class="p-4">
+            <a href="/Home/Details/${product.productId}" class="block">
+              <h3 class="text-lg font-semibold text-gray-800 mb-2 line-clamp-2 hover:text-blue-600 transition">
+                ${escapeHtml(product.productName)}
+              </h3>
+            </a>
+            <div class="flex items-center mb-3">
+              ${reviewCount > 0 
+                ? `<div class="text-yellow-500 text-sm">${starsHtml}</div>
+                   <span class="text-gray-600 text-sm ml-2">${avgRating.toFixed(1)} (${reviewCount} ${reviewCount === 1 ? 'review' : 'reviews'})</span>`
+                : `<div class="text-gray-300 text-sm">
+                     <i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i>
+                   </div>
+                   <span class="text-gray-400 text-sm ml-2">Chưa có đánh giá</span>`
+              }
+            </div>
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <span class="text-2xl font-bold text-blue-600">${formatPrice(product.price)}đ</span>
+              </div>
+            </div>
+            <button
+                class="w-full ${isInStock ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'} text-white py-2 rounded-lg transition font-semibold add-to-cart-btn"
+                data-product-id="${product.productId}"
+                data-product-name="${escapeHtml(product.productName)}"
+                data-product-price="${product.price}"
+                ${!isInStock ? 'disabled' : ''}>
+                <i class="fas fa-shopping-cart mr-2"></i>${isInStock ? 'Thêm vào giỏ' : 'Hết sản phẩm'}
+            </button>
+          </div>
+        </div>
+      `;
+    });
+  } else {
+    productsHtml += `
+      <div class="col-span-full text-center py-12">
+        <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
+        <h3 class="text-2xl font-semibold text-gray-600 mb-2">No Products Found</h3>
+        <p class="text-gray-500">Please check back later or try a different search.</p>
+      </div>
+    `;
+  }
+  
+  productsHtml += '</div>';
+
+  // Render pagination
+  if (totalPages > 1) {
+    productsHtml += renderPaginationHtml(page, totalPages);
+  }
+
+  container.innerHTML = productsHtml;
+
+  // Re-bind event listeners
+  rebindProductListEvents();
+}
+
+// Helper function to render stars HTML
+function renderStarsHtml(rating) {
+  if (rating <= 0) return '<i class="far fa-star"></i>'.repeat(5);
+  
+  const fullStars = Math.floor(rating);
+  const hasHalfStar = (rating - fullStars) >= 0.5;
+  const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+  
+  let html = '';
+  for (let i = 0; i < fullStars; i++) {
+    html += '<i class="fas fa-star"></i>';
+  }
+  if (hasHalfStar) {
+    html += '<i class="fas fa-star-half-alt"></i>';
+  }
+  for (let i = 0; i < emptyStars; i++) {
+    html += '<i class="far fa-star"></i>';
+  }
+  return html;
+}
+
+// Helper function to render pagination HTML
+function renderPaginationHtml(currentPage, totalPages) {
+  let html = '<div class="flex justify-center items-center gap-2 mt-12" data-pagination-container>';
+  
+  // Previous button
+  if (currentPage > 1) {
+    html += `<a href="#" data-page-link data-page="${currentPage - 1}"
+                 class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                 <i class="fas fa-chevron-left"></i>
+               </a>`;
+  }
+
+  // Page numbers
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === currentPage) {
+      html += `<button class="px-4 py-2 bg-blue-600 text-white rounded-lg" disabled>${i}</button>`;
+    } else if (i >= currentPage - 2 && i <= currentPage + 2) {
+      html += `<a href="#" data-page-link data-page="${i}"
+                   class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-100 transition">${i}</a>`;
+    }
+  }
+
+  // Next button
+  if (currentPage < totalPages) {
+    html += `<a href="#" data-page-link data-page="${currentPage + 1}"
+                 class="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                 <i class="fas fa-chevron-right"></i>
+               </a>`;
+  }
+
+  html += '</div>';
+  return html;
+}
+
+// Helper functions
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function formatPrice(price) {
+  return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+// Fallback to server-side filtering
+function useServerSideFiltering() {
+  // Use existing server-side filtering logic
   const filters = getActiveFilters();
-  filters.page = 1;
   applyFilters(filters);
 }
 
 function handleSearch(event) {
-  const query = event.target.querySelector('input[name="q"]').value;
-  if (query.trim() === "") {
-    event.preventDefault();
+  event.preventDefault();
+  const query = event.target.querySelector('input[name="q"]').value.trim();
+  
+  if (query === "") {
     showNotification("Please enter a search term!", "warning");
+    return;
+  }
+
+  // Update current filters
+  currentFilters.searchQuery = query;
+  currentFilters.page = 1;
+
+  // Build URL
+  const params = new URLSearchParams();
+  params.append("searchQuery", query);
+  
+  // Preserve other filters
+  const filters = getActiveFilters();
+  if (filters.categoryId) params.append("categoryId", filters.categoryId);
+  if (filters.minPrice !== null) params.append("minPrice", filters.minPrice);
+  if (filters.maxPrice !== null) params.append("maxPrice", filters.maxPrice);
+  if (filters.minRating !== null) params.append("minRating", filters.minRating);
+
+  const origin = window.location.origin;
+  const finalUrl = `${origin}/Home/Index?${params.toString()}`;
+
+  // Update URL
+  if (window.history && window.history.pushState) {
+    window.history.pushState(null, "", finalUrl);
+  }
+
+  // Apply filters using cache if available
+  if (productsCache.isLoaded) {
+    applyFiltersFromCache();
+  } else {
+    useServerSideFiltering();
   }
 }
 

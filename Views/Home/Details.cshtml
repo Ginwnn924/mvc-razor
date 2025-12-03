@@ -1,4 +1,5 @@
 @model ProductDetailsViewModel
+@using mvc_razor.Models
 
 @{
     ViewData["Title"] = Model.Product.ProductName;
@@ -6,6 +7,50 @@
     "https://via.placeholder.com/500x500?text=" + Uri.EscapeDataString(Model.Product.ProductName);
     var stockQuantity = Model.Product.Inventory?.Quantity ?? 0;
     var isInStock = stockQuantity > 0;
+    
+    // Helper function to render stars
+    Func<decimal, string> RenderStars = (rating) =>
+    {
+        if (rating <= 0) return "";
+        
+        var fullStars = (int)Math.Floor(rating);
+        var hasHalfStar = (rating - fullStars) >= 0.5m;
+        var emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+        
+        var html = "";
+        for (int i = 0; i < fullStars; i++)
+        {
+            html += "<i class=\"fas fa-star\"></i>";
+        }
+        if (hasHalfStar)
+        {
+            html += "<i class=\"fas fa-star-half-alt\"></i>";
+        }
+        for (int i = 0; i < emptyStars; i++)
+        {
+            html += "<i class=\"far fa-star\"></i>";
+        }
+        return html;
+    };
+    
+    // Get rating info from ViewBag
+    var productRating = ViewBag.ProductRating as ProductRatingInfo ?? new ProductRatingInfo 
+    { 
+        ProductId = Model.Product.ProductId, 
+        AverageRating = 0, 
+        ReviewCount = 0 
+    };
+    var reviews = ViewBag.ProductReviews as List<ReviewModel> ?? new List<ReviewModel>();
+    var customers = ViewBag.Customers as Dictionary<int, string> ?? new Dictionary<int, string>();
+    var ratingDistribution = ViewBag.RatingDistribution as Dictionary<int, int> ?? new Dictionary<int, int>
+    {
+        {5, 0}, {4, 0}, {3, 0}, {2, 0}, {1, 0}
+    };
+    var relatedProductRatings = ViewBag.RelatedProductRatings as Dictionary<int, ProductRatingInfo> ?? new Dictionary<int, ProductRatingInfo>();
+    
+    var avgRating = productRating.AverageRating;
+    var reviewCount = productRating.ReviewCount;
+    var totalReviews = reviewCount;
 }
 
 <!-- Breadcrumb -->
@@ -79,15 +124,25 @@
 
             <!-- Rating -->
             <div class="flex items-center mb-6">
-                <div class="flex text-yellow-500">
-                    <i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i>
-                    <i class="far fa-star"></i>
-                </div>
-                <span class="text-gray-600 ml-3">(0 reviews)</span>
-                <a href="#reviews" class="text-blue-600 hover:text-blue-800 ml-4">Write a review</a>
+                @if (reviewCount > 0)
+                {
+                    <div class="flex text-yellow-500">
+                        @Html.Raw(RenderStars(avgRating))
+                    </div>
+                    <span class="text-gray-600 ml-3">@avgRating.ToString("F1") (@reviewCount @(reviewCount == 1 ? "review" : "reviews"))</span>
+                }
+                else
+                {
+                    <div class="flex text-gray-300">
+                        <i class="far fa-star"></i>
+                        <i class="far fa-star"></i>
+                        <i class="far fa-star"></i>
+                        <i class="far fa-star"></i>
+                        <i class="far fa-star"></i>
+                    </div>
+                    <span class="text-gray-400 ml-3">Chưa có đánh giá</span>
+                }
+                <a href="#reviews" class="text-blue-600 hover:text-blue-800 ml-4">@(reviewCount > 0 ? "Xem đánh giá" : "Viết đánh giá đầu tiên")</a>
             </div>
 
             <!-- Price Section -->
@@ -198,66 +253,118 @@
 <div class="bg-white rounded-lg shadow-md p-8 mb-8" id="reviews">
     <h2 class="text-2xl font-bold text-gray-800 mb-6">Customer Reviews</h2>
 
-    <!-- Review Summary -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8 pb-8 border-b border-gray-200">
-        <div class="text-center">
-            <div class="text-5xl font-bold text-gray-800 mb-2">4.0</div>
-            <div class="flex justify-center text-yellow-500 mb-2">
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="far fa-star"></i>
+    @if (reviewCount > 0)
+    {
+        <!-- Review Summary -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8 pb-8 border-b border-gray-200">
+            <div class="text-center">
+                <div class="text-5xl font-bold text-gray-800 mb-2">@avgRating.ToString("F1")</div>
+                <div class="flex justify-center text-yellow-500 mb-2">
+                    @Html.Raw(RenderStars(avgRating))
+                </div>
+                <p class="text-gray-600">Dựa trên @reviewCount @(reviewCount == 1 ? "đánh giá" : "đánh giá")</p>
             </div>
-            <p class="text-gray-600">Based on 0 reviews</p>
-        </div>
 
-        <div class="md:col-span-2">
-            <div class="space-y-2">
-                <div class="flex items-center gap-4">
-                    <span class="text-gray-600 w-12">5 <i class="fas fa-star text-yellow-500"></i></span>
-                    <div class="flex-1 bg-gray-200 rounded-full h-2">
-                        <div class="bg-yellow-500 h-2 rounded-full" style="width: 0%"></div>
-                    </div>
-                    <span class="text-gray-600 w-12">0</span>
-                </div>
-                <div class="flex items-center gap-4">
-                    <span class="text-gray-600 w-12">4 <i class="fas fa-star text-yellow-500"></i></span>
-                    <div class="flex-1 bg-gray-200 rounded-full h-2">
-                        <div class="bg-yellow-500 h-2 rounded-full" style="width: 0%"></div>
-                    </div>
-                    <span class="text-gray-600 w-12">0</span>
-                </div>
-                <div class="flex items-center gap-4">
-                    <span class="text-gray-600 w-12">3 <i class="fas fa-star text-yellow-500"></i></span>
-                    <div class="flex-1 bg-gray-200 rounded-full h-2">
-                        <div class="bg-yellow-500 h-2 rounded-full" style="width: 0%"></div>
-                    </div>
-                    <span class="text-gray-600 w-12">0</span>
-                </div>
-                <div class="flex items-center gap-4">
-                    <span class="text-gray-600 w-12">2 <i class="fas fa-star text-yellow-500"></i></span>
-                    <div class="flex-1 bg-gray-200 rounded-full h-2">
-                        <div class="bg-yellow-500 h-2 rounded-full" style="width: 0%"></div>
-                    </div>
-                    <span class="text-gray-600 w-12">0</span>
-                </div>
-                <div class="flex items-center gap-4">
-                    <span class="text-gray-600 w-12">1 <i class="fas fa-star text-yellow-500"></i></span>
-                    <div class="flex-1 bg-gray-200 rounded-full h-2">
-                        <div class="bg-yellow-500 h-2 rounded-full" style="width: 0%"></div>
-                    </div>
-                    <span class="text-gray-600 w-12">0</span>
+            <div class="md:col-span-2">
+                <div class="space-y-2">
+                    @for (int rating = 5; rating >= 1; rating--)
+                    {
+                        var count = ratingDistribution.ContainsKey(rating) ? ratingDistribution[rating] : 0;
+                        var percentage = totalReviews > 0 ? (count * 100.0 / totalReviews) : 0;
+                        <div class="flex items-center gap-4">
+                            <span class="text-gray-600 w-12">@rating <i class="fas fa-star text-yellow-500"></i></span>
+                            <div class="flex-1 bg-gray-200 rounded-full h-2">
+                                <div class="bg-yellow-500 h-2 rounded-full" style="width: @percentage.ToString("F1")%"></div>
+                            </div>
+                            <span class="text-gray-600 w-12">@count</span>
+                        </div>
+                    }
                 </div>
             </div>
         </div>
-    </div>
+    }
 
-    <!-- No Reviews Message -->
-    <div class="text-center py-8">
-        <i class="fas fa-comment-slash text-4xl text-gray-300 mb-4"></i>
-        <p class="text-gray-600 text-lg">No reviews yet. Be the first to review this product!</p>
-    </div>
+    @if (reviewCount > 0)
+    {
+        <!-- Reviews List -->
+        <div class="space-y-6">
+            @foreach (var review in reviews)
+            {
+                var customerName = review.CustomerId.HasValue && customers.ContainsKey(review.CustomerId.Value)
+                    ? customers[review.CustomerId.Value]
+                    : "Khách hàng";
+                var reviewDate = review.CreatedAt;
+                var timeAgo = "";
+                var daysDiff = (DateTime.UtcNow - reviewDate).Days;
+                if (daysDiff == 0)
+                {
+                    timeAgo = "Hôm nay";
+                }
+                else if (daysDiff == 1)
+                {
+                    timeAgo = "Hôm qua";
+                }
+                else if (daysDiff < 7)
+                {
+                    timeAgo = $"{daysDiff} ngày trước";
+                }
+                else if (daysDiff < 30)
+                {
+                    var weeks = daysDiff / 7;
+                    timeAgo = weeks + " " + (weeks == 1 ? "tuần" : "tuần") + " trước";
+                }
+                else if (daysDiff < 365)
+                {
+                    var months = daysDiff / 30;
+                    timeAgo = months + " " + (months == 1 ? "tháng" : "tháng") + " trước";
+                }
+                else
+                {
+                    var years = daysDiff / 365;
+                    timeAgo = years + " " + (years == 1 ? "năm" : "năm") + " trước";
+                }
+                
+                <div class="border-b border-gray-200 pb-6 last:border-b-0">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <span class="text-blue-600 font-semibold">@customerName.Substring(0, 1).ToUpper()</span>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-800">@customerName</h4>
+                                <p class="text-sm text-gray-500">@timeAgo</p>
+                            </div>
+                        </div>
+                        <div class="flex text-yellow-500 text-sm">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                if (i <= review.Rating)
+                                {
+                                    <i class="fas fa-star"></i>
+                                }
+                                else
+                                {
+                                    <i class="far fa-star"></i>
+                                }
+                            }
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(review.Comment))
+                    {
+                        <p class="text-gray-700 leading-relaxed">@review.Comment</p>
+                    }
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <!-- No Reviews Message -->
+        <div class="text-center py-8">
+            <i class="fas fa-comment-slash text-4xl text-gray-300 mb-4"></i>
+            <p class="text-gray-600 text-lg">Chưa có đánh giá nào. Hãy là người đầu tiên đánh giá sản phẩm này!</p>
+        </div>
+    }
 </div>
 
 <!-- Related Products Section -->
@@ -286,16 +393,32 @@
                     </div>
                     <div class="p-4">
                         <h3 class="text-sm font-semibold text-gray-800 mb-2 line-clamp-2">@product.ProductName</h3>
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center justify-between mb-2">
                             <span class="text-lg font-bold text-blue-600">@product.Price.ToString("#,##0")đ</span>
-                            <div class="text-yellow-500 text-xs">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="far fa-star"></i>
-                            </div>
+                            @{
+                                var relatedRatingInfo = relatedProductRatings.ContainsKey(product.ProductId) 
+                                    ? relatedProductRatings[product.ProductId] 
+                                    : new ProductRatingInfo { ProductId = product.ProductId, AverageRating = 0, ReviewCount = 0 };
+                                var relatedAvgRating = relatedRatingInfo.AverageRating;
+                                var relatedReviewCount = relatedRatingInfo.ReviewCount;
+                            }
+                            @if (relatedReviewCount > 0)
+                            {
+                                <div class="text-yellow-500 text-xs">
+                                    @Html.Raw(RenderStars(relatedAvgRating))
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-gray-300 text-xs">
+                                    <i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i>
+                                </div>
+                            }
                         </div>
+                        @if (relatedReviewCount > 0)
+                        {
+                            <p class="text-xs text-gray-500">@relatedAvgRating.ToString("F1") (@relatedReviewCount)</p>
+                        }
                     </div>
                 </a>
             }
