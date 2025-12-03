@@ -92,8 +92,13 @@ namespace mvc_razor.Controllers
                     .Include(p => p.Inventory)
                     .ToListAsync();
 
+                // Get all categories for filter sidebar
+                var categories = await _context.Categories
+                    .OrderBy(c => c.CategoryName)
+                    .ToListAsync();
 
                 // Pass data to ViewBag for sidebar and search box
+                ViewBag.Categories = categories;
                 ViewBag.SelectedCategoryId = categoryId;
                 ViewBag.MinPrice = minPrice;
                 ViewBag.MaxPrice = maxPrice;
