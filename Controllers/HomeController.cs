@@ -317,6 +317,76 @@ namespace mvc_razor.Controllers
             }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetAllProductsJson()
+        {
+            try
+            {
+                // Get all active products with related data
+                var products = await _context.Products
+                    .Include(p => p.Category)
+                    .Include(p => p.Inventory)
+                    .Include(p => p.Reviews)
+                    .Where(p => !p.IsDeleted)
+                    .OrderByDescending(p => p.CreatedAt)
+                    .ToListAsync();
+
+                // Get all categories
+                var categories = await _context.Categories
+                    .OrderBy(c => c.CategoryName)
+                    .ToListAsync();
+
+                // Calculate rating info for each product
+                var productRatings = new Dictionary<int, ProductRatingInfo>();
+                foreach (var product in products)
+                {
+                    var activeReviews = product.Reviews?.Where(r => !r.IsDeleted).ToList() ?? new List<ReviewModel>();
+                    var reviewCount = activeReviews.Count;
+                    var averageRating = reviewCount > 0 
+                        ? (decimal)activeReviews.Average(r => r.Rating) 
+                        : 0;
+
+                    productRatings[product.ProductId] = new ProductRatingInfo
+                    {
+                        ProductId = product.ProductId,
+                        AverageRating = averageRating,
+                        ReviewCount = reviewCount
+                    };
+                }
+
+                // Create response object
+                var response = new
+                {
+                    products = products.Select(p => new
+                    {
+                        productId = p.ProductId,
+                        productName = p.ProductName,
+                        price = p.Price,
+                        imageUrl = p.ImageUrl ?? "",
+                        categoryId = p.CategoryId,
+                        categoryName = p.Category?.CategoryName ?? "",
+                        stockQuantity = p.Inventory?.Quantity ?? 0,
+                        createdAt = p.CreatedAt,
+                        averageRating = productRatings.ContainsKey(p.ProductId) ? productRatings[p.ProductId].AverageRating : 0,
+                        reviewCount = productRatings.ContainsKey(p.ProductId) ? productRatings[p.ProductId].ReviewCount : 0
+                    }).ToList(),
+                    categories = categories.Select(c => new
+                    {
+                        categoryId = c.CategoryId,
+                        categoryName = c.CategoryName
+                    }).ToList(),
+                    timestamp = DateTime.UtcNow
+                };
+
+                return Json(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading all products for JSON");
+                return Json(new { error = "Failed to load products" });
+            }
+        }
+
         public IActionResult Search(string q, int page = 1, int pageSize = 12, int? categoryId = null, decimal? minPrice = null, decimal? maxPrice = null)
         {
             if (string.IsNullOrWhiteSpace(q))
