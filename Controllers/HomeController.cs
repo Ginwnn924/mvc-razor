@@ -75,11 +75,29 @@ namespace mvc_razor.Controllers
                 // Get products with pagination
                 var products = await query
                     .Where(p => p.IsDeleted == false)
+                    .Include(p => p.Reviews)
                     .OrderByDescending(p => p.CreatedAt)
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
 
+                // Calculate rating info for each product
+                var productRatings = new Dictionary<int, ProductRatingInfo>();
+                foreach (var product in products)
+                {
+                    var activeReviews = product.Reviews?.Where(r => !r.IsDeleted).ToList() ?? new List<ReviewModel>();
+                    var reviewCount = activeReviews.Count;
+                    var averageRating = reviewCount > 0 
+                        ? (decimal)activeReviews.Average(r => r.Rating) 
+                        : 0;
+
+                    productRatings[product.ProductId] = new ProductRatingInfo
+                    {
+                        ProductId = product.ProductId,
+                        AverageRating = averageRating,
+                        ReviewCount = reviewCount
+                    };
+                }
 
                 var bestSellerProducts = await _context.Products
                     .FromSqlRaw(@"
@@ -90,7 +108,26 @@ namespace mvc_razor.Controllers
                         LIMIT 4")
                     .Include(p => p.Category)
                     .Include(p => p.Inventory)
+                    .Include(p => p.Reviews)
                     .ToListAsync();
+
+                // Calculate rating info for best sellers
+                var bestSellerRatings = new Dictionary<int, ProductRatingInfo>();
+                foreach (var product in bestSellerProducts)
+                {
+                    var activeReviews = product.Reviews?.Where(r => !r.IsDeleted).ToList() ?? new List<ReviewModel>();
+                    var reviewCount = activeReviews.Count;
+                    var averageRating = reviewCount > 0 
+                        ? (decimal)activeReviews.Average(r => r.Rating) 
+                        : 0;
+
+                    bestSellerRatings[product.ProductId] = new ProductRatingInfo
+                    {
+                        ProductId = product.ProductId,
+                        AverageRating = averageRating,
+                        ReviewCount = reviewCount
+                    };
+                }
 
                 // Get all categories for filter sidebar
                 var categories = await _context.Categories
@@ -104,6 +141,8 @@ namespace mvc_razor.Controllers
                 ViewBag.MaxPrice = maxPrice;
                 ViewBag.SearchQuery = searchQuery;
                 ViewBag.MinRating = minRating;
+                ViewBag.ProductRatings = productRatings;
+                ViewBag.BestSellerRatings = bestSellerRatings;
 
                 // Create view model
                 var viewModel = new ProductListViewModel
@@ -144,6 +183,27 @@ namespace mvc_razor.Controllers
 
             if (result?.Model is ProductListViewModel viewModel)
             {
+                // Calculate rating info for products in viewModel (đảm bảo ViewBag có rating info)
+                var productRatings = new Dictionary<int, ProductRatingInfo>();
+                foreach (var product in viewModel.Products)
+                {
+                    var activeReviews = product.Reviews?.Where(r => !r.IsDeleted).ToList() ?? new List<ReviewModel>();
+                    var reviewCount = activeReviews.Count;
+                    var averageRating = reviewCount > 0 
+                        ? (decimal)activeReviews.Average(r => r.Rating) 
+                        : 0;
+
+                    productRatings[product.ProductId] = new ProductRatingInfo
+                    {
+                        ProductId = product.ProductId,
+                        AverageRating = averageRating,
+                        ReviewCount = reviewCount
+                    };
+                }
+                
+                // Set ViewBag để PartialView có thể sử dụng
+                ViewBag.ProductRatings = productRatings;
+                
                 return PartialView("_ProductList", viewModel);
             }
 
