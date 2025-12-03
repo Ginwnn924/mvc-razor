@@ -126,14 +126,12 @@
                     <!-- Custom Price Inputs -->
                     <div id="customPriceInputs" class="ml-7 mt-2 @(isCustomPrice ? "" : "hidden")">
                         <div class="flex flex-col gap-2">
-                            <div class="flex gap-2">
-                                <input type="number" id="customMinPrice" placeholder="Từ (đ)" min="0" step="1000"
-                                    value="@(minPrice.HasValue && isCustomPrice ? minPrice.Value.ToString("0") : "")"
-                                    class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                                <input type="number" id="customMaxPrice" placeholder="Đến (đ)" min="0" step="1000"
-                                    value="@(maxPrice.HasValue && isCustomPrice ? maxPrice.Value.ToString("0") : "")"
-                                    class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                            </div>
+                            <input type="number" id="customMinPrice" placeholder="Từ (đ)" min="0" step="1000"
+                                value="@(minPrice.HasValue && isCustomPrice ? minPrice.Value.ToString("0") : "")"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            <input type="number" id="customMaxPrice" placeholder="Đến (đ)" min="0" step="1000"
+                                value="@(maxPrice.HasValue && isCustomPrice ? maxPrice.Value.ToString("0") : "")"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                             <button type="button" id="applyCustomPrice"
                                 class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition text-sm font-semibold">
                                 Áp dụng
