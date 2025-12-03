@@ -217,6 +217,7 @@ namespace mvc_razor.Controllers
                 var product = await _context.Products
                     .Include(p => p.Category)
                     .Include(p => p.Inventory)
+                    .Include(p => p.Reviews)
                     .FirstOrDefaultAsync(p => p.ProductId == id);
 
                 if (product == null)
@@ -224,13 +225,82 @@ namespace mvc_razor.Controllers
                     return NotFound();
                 }
 
+                // Get active reviews (not deleted) and include customer info
+                var activeReviews = product.Reviews?
+                    .Where(r => !r.IsDeleted)
+                    .OrderByDescending(r => r.CreatedAt)
+                    .ToList() ?? new List<ReviewModel>();
+
+                // Load customer names for reviews
+                var customerIds = activeReviews
+                    .Where(r => r.CustomerId.HasValue)
+                    .Select(r => r.CustomerId!.Value)
+                    .Distinct()
+                    .ToList();
+
+                var customers = await _context.Customers
+                    .Where(c => customerIds.Contains(c.CustomerId))
+                    .ToDictionaryAsync(c => c.CustomerId, c => c.Name);
+
+                // Calculate rating info for main product
+                var reviewCount = activeReviews.Count;
+                var averageRating = reviewCount > 0 
+                    ? (decimal)activeReviews.Average(r => r.Rating) 
+                    : 0;
+
+                // Calculate rating distribution
+                var ratingDistribution = new Dictionary<int, int>
+                {
+                    { 5, 0 }, { 4, 0 }, { 3, 0 }, { 2, 0 }, { 1, 0 }
+                };
+                foreach (var review in activeReviews)
+                {
+                    if (ratingDistribution.ContainsKey(review.Rating))
+                    {
+                        ratingDistribution[review.Rating]++;
+                    }
+                }
+
+                var productRating = new ProductRatingInfo
+                {
+                    ProductId = product.ProductId,
+                    AverageRating = averageRating,
+                    ReviewCount = reviewCount
+                };
+
                 // Get related products (same category)
                 var relatedProducts = await _context.Products
                     .Include(p => p.Category)
                     .Include(p => p.Inventory)
-                    .Where(p => p.CategoryId == product.CategoryId && p.ProductId != id)
+                    .Include(p => p.Reviews)
+                    .Where(p => p.CategoryId == product.CategoryId && p.ProductId != id && !p.IsDeleted)
                     .Take(4)
                     .ToListAsync();
+
+                // Calculate rating info for related products
+                var relatedProductRatings = new Dictionary<int, ProductRatingInfo>();
+                foreach (var relatedProduct in relatedProducts)
+                {
+                    var relatedActiveReviews = relatedProduct.Reviews?.Where(r => !r.IsDeleted).ToList() ?? new List<ReviewModel>();
+                    var relatedReviewCount = relatedActiveReviews.Count;
+                    var relatedAverageRating = relatedReviewCount > 0 
+                        ? (decimal)relatedActiveReviews.Average(r => r.Rating) 
+                        : 0;
+
+                    relatedProductRatings[relatedProduct.ProductId] = new ProductRatingInfo
+                    {
+                        ProductId = relatedProduct.ProductId,
+                        AverageRating = relatedAverageRating,
+                        ReviewCount = relatedReviewCount
+                    };
+                }
+
+                // Pass data to ViewBag
+                ViewBag.ProductRating = productRating;
+                ViewBag.ProductReviews = activeReviews;
+                ViewBag.Customers = customers;
+                ViewBag.RatingDistribution = ratingDistribution;
+                ViewBag.RelatedProductRatings = relatedProductRatings;
 
                 var viewModel = new ProductDetailsViewModel
                 {
